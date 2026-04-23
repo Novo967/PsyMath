@@ -159,6 +159,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     padding: 20,
+    paddingTop: 60,
     paddingBottom: 40,
   },
   scoreHeader: {
@@ -265,7 +266,7 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
   optionsContainer: {
-    marginBottom: 20,
+    marginBottom: 0,
   },
   optionBase: {
     flexDirection: 'row',

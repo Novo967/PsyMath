@@ -123,8 +123,8 @@ export default function PracticeScreen() {
         // אובייקט העדכון הבסיסי
         const updateData: any = {
           questionsSolvedToday: increment(1),
-          totalQuestionsPracticed: increment(1), // ספירת כלל השאלות שתורגלו
-          practicedQuestions: arrayUnion(currentQuestion.id), // הוספת ה-ID של השאלה למערך ששומר את כל השאלות שבוצעו
+          totalQuestionsPracticed: increment(1),
+          practicedQuestions: arrayUnion(currentQuestion.id),
           lastQuestionDate: new Date().toISOString()
         };
 
@@ -137,13 +137,13 @@ export default function PracticeScreen() {
         
         // עדכון סטייט מקומי
         setUserStatus(prev => prev ? { ...prev, solvedToday: prev.solvedToday + 1 } : null);
-        setHasCountedInQuota(true); // מסמן שהשאלה כבר נספרה
+        setHasCountedInQuota(true); 
       } catch (error) {
         console.error("Error updating stats:", error);
       }
     }
 
-    // הצגת המשוב למשתמש (לאחר שהסטטיסטיקות עודכנו במידת הצורך)
+    // הצגת המשוב למשתמש
     setShowFeedback(true);
   };
 
@@ -153,17 +153,16 @@ export default function PracticeScreen() {
       setSelectedAnswer(null);
       setShowFeedback(false);
       setShowSolution(false);
-      setHasCountedInQuota(false); // איפוס המעקב לקראת השאלה הבאה
+      setHasCountedInQuota(false);
     } else {
       Alert.alert("כל הכבוד!", "סיימת את כל השאלות במאגר הנוכחי.");
     }
   };
 
   if (loading) {
-    return <ActivityIndicator style={{ flex: 1, justifyContent: 'center' }} size="large" color="#007BFF" />;
+    return <ActivityIndicator style={{ flex: 1, justifyContent: 'center' }} size="large" color="#3182CE" />;
   }
 
-  // Handle empty database scenario
   if (questions.length === 0) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -173,51 +172,88 @@ export default function PracticeScreen() {
   }
 
   const currentQuestion = questions[currentIndex];
-  // עזר לקביעה האם התשובה הנבחרת נכונה (רלוונטי רק כשהמשוב מוצג)
   const isCorrectAnswer = showFeedback && selectedAnswer === currentQuestion.correctAnswerIndex;
+
+  // פונקציות עיצוב דינמיות ששומרות על לוגיקת הניסיון החוזר
+  const getOptionStyle = (index: number) => {
+    if (!showFeedback) {
+      return selectedAnswer === index 
+        ? [styles.optionButton, styles.selectedOption]
+        : styles.optionButton;
+    }
+
+    // אם נבדק והתשובה שבחרנו נכונה
+    if (selectedAnswer === index && selectedAnswer === currentQuestion.correctAnswerIndex) {
+      return [styles.optionButton, styles.correctOption];
+    }
+    
+    // אם נבדק והתשובה שבחרנו שגויה (צובע רק אותה, לא מסגיר את הנכונה)
+    if (selectedAnswer === index && selectedAnswer !== currentQuestion.correctAnswerIndex) {
+      return [styles.optionButton, styles.wrongOption];
+    }
+    
+    // שאר התשובות נשארות רגילות כדי לאפשר לחיצה חוזרת
+    return styles.optionButton;
+  };
+
+  const getOptionTextStyle = (index: number) => {
+    if (!showFeedback && selectedAnswer === index) return styles.selectedOptionText;
+    if (showFeedback && selectedAnswer === index && selectedAnswer === currentQuestion.correctAnswerIndex) return styles.correctOptionText;
+    if (showFeedback && selectedAnswer === index && selectedAnswer !== currentQuestion.correctAnswerIndex) return styles.wrongOptionText;
+    return styles.optionText;
+  };
 
   return (
     <ScrollView 
       style={styles.container}
-      contentContainerStyle={{ paddingBottom: 60 }} 
+      contentContainerStyle={styles.scrollContent} 
+      showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.topicText}>
-        {currentQuestion.topic}
-      </Text>
+      {/* תגית נושא */}
+      <View style={styles.topicBadge}>
+        <Text style={styles.topicText}>{currentQuestion.topic}</Text>
+      </View>
       
-      <Text style={styles.questionText}>{currentQuestion.questionText}</Text>
+      {/* כרטיסיית השאלה */}
+      <View style={styles.questionCard}>
+        <Text style={styles.questionText}>{currentQuestion.questionText}</Text>
+      </View>
 
-      {currentQuestion.options.map((opt, index) => (
-        <TouchableOpacity
-          key={index}
-          style={[
-            styles.optionButton,
-            selectedAnswer === index && styles.selectedOption
-          ]}
-          onPress={() => {
-            setSelectedAnswer(index);
-            // מסתיר את המשוב והפתרון במידה והמשתמש מנסה שוב לאחר טעות
-            setShowFeedback(false);
-            setShowSolution(false);
-          }}
-          disabled={isCorrectAnswer} // נועל את הכפתורים רק אם הוא כבר מצא את התשובה הנכונה
-        >
-          <Text style={styles.optionText}>{opt}</Text>
-        </TouchableOpacity>
-      ))}
+      {/* אזור התשובות */}
+      <View style={styles.optionsContainer}>
+        {currentQuestion.options.map((opt, index) => (
+          <TouchableOpacity
+            key={index}
+            style={getOptionStyle(index)}
+            onPress={() => {
+              setSelectedAnswer(index);
+              // מאפס את המשוב והפתרון ברגע שבוחרים תשובה חדשה לניסיון נוסף
+              setShowFeedback(false);
+              setShowSolution(false);
+            }}
+            disabled={isCorrectAnswer} // נועל רק אם הוא כבר מצא את התשובה הנכונה
+            activeOpacity={0.7}
+          >
+            <Text style={getOptionTextStyle(index)}>{opt}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
+      {/* אזור כפתור פעולה ומשוב */}
       {!showFeedback ? (
-        <TouchableOpacity style={styles.actionButton} onPress={handleCheck}>
+        <TouchableOpacity style={styles.actionButton} onPress={handleCheck} activeOpacity={0.8}>
           <Text style={styles.actionButtonText}>בדוק תשובה</Text>
         </TouchableOpacity>
       ) : (
         <View style={styles.feedbackContainer}>
-          <Text style={isCorrectAnswer ? styles.correctText : styles.wrongText}>
+          <Text style={isCorrectAnswer ? styles.correctFeedbackText : styles.wrongFeedbackText}>
             {isCorrectAnswer ? '✅ תשובה נכונה! יפה מאוד.' : '❌ תשובה שגויה. בחר תשובה אחרת ונסה שוב, או צפה בפתרון.'}
           </Text>
           
-          <TouchableOpacity onPress={() => setShowSolution(true)} style={styles.solutionButton}>
-            <Text style={styles.solutionButtonText}>הצג פתרון מלא</Text>
+          <TouchableOpacity onPress={() => setShowSolution(!showSolution)} style={styles.solutionButton}>
+            <Text style={styles.solutionButtonText}>
+              {showSolution ? 'הסתר פתרון' : 'הצג פתרון מלא'}
+            </Text>
           </TouchableOpacity>
           
           {showSolution && (
@@ -226,7 +262,7 @@ export default function PracticeScreen() {
             </View>
           )}
 
-          <TouchableOpacity style={[styles.actionButton, { marginTop: 20 }]} onPress={handleNextQuestion}>
+          <TouchableOpacity style={[styles.actionButton, styles.nextButton]} onPress={handleNextQuestion} activeOpacity={0.8}>
             <Text style={styles.actionButtonText}>
               {currentIndex < questions.length - 1 ? 'לשאלה הבאה' : 'סיום תרגול'}
             </Text>
@@ -240,85 +276,158 @@ export default function PracticeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#9dbde9',
+    // הסרנו מכאן את ה-padding כדי לאפשר גלילה מלאה עד הקצה
+  },
+  scrollContent: {
     padding: 20,
+    paddingTop: 40,
+    paddingBottom: 100, // ריווח תחתון נדיב שמבטיח שהכפתור תמיד ייראה במלואו, גם כשההסבר פתוח
+  },
+  topicBadge: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#E2E8F0',
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    marginBottom: 16,
   },
   topicText: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'right',
-    marginBottom: 5,
+    fontSize: 13,
+    color: '#4A5568',
+    fontWeight: '600',
+  },
+  questionCard: {
+    backgroundColor: '#FFFFFF',
+    padding: 24,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+    marginBottom: 24,
   },
   questionText: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '700',
     textAlign: 'right',
-    marginBottom: 20,
-    color: '#333',
-    lineHeight: 28,
+    color: '#2D3748',
+    lineHeight: 30,
   },
-  optionButton: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
+  optionsContainer: {
     marginBottom: 10,
   },
+  optionButton: {
+    backgroundColor: '#FFFFFF',
+    padding: 18,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+    marginBottom: 12,
+  },
   selectedOption: {
-    borderColor: '#007BFF',
-    backgroundColor: '#E6F2FF',
+    borderColor: '#3182CE',
+    backgroundColor: '#EBF8FF',
+  },
+  correctOption: {
+    borderColor: '#48BB78',
+    backgroundColor: '#F0FFF4',
+  },
+  wrongOption: {
+    borderColor: '#F56565',
+    backgroundColor: '#FFF5F5',
   },
   optionText: {
     fontSize: 16,
     textAlign: 'right',
+    color: '#4A5568',
   },
-  actionButton: {
-    backgroundColor: '#007BFF',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  actionButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  feedbackContainer: {
-    marginTop: 20,
-  },
-  correctText: {
-    fontSize: 18,
-    color: 'green',
-    textAlign: 'right',
-    fontWeight: 'bold',
-  },
-  wrongText: {
-    fontSize: 18,
-    color: 'red',
-    textAlign: 'right',
-    fontWeight: 'bold',
-  },
-  solutionButton: {
-    marginTop: 15,
-  },
-  solutionButtonText: {
-    color: '#007BFF',
+  selectedOptionText: {
     fontSize: 16,
     textAlign: 'right',
-    textDecorationLine: 'underline',
+    color: '#2B6CB0',
+    fontWeight: '600',
+  },
+  correctOptionText: {
+    fontSize: 16,
+    textAlign: 'right',
+    color: '#276749',
+    fontWeight: '600',
+  },
+  wrongOptionText: {
+    fontSize: 16,
+    textAlign: 'right',
+    color: '#9B2C2C',
+    fontWeight: '600',
+  },
+  actionButton: {
+    backgroundColor: '#3182CE',
+    padding: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+    marginTop: 10,
+    shadowColor: '#3182CE',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  nextButton: {
+    backgroundColor: '#2D3748',
+    shadowColor: '#2D3748',
+    marginTop: 20,
+  },
+  actionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  feedbackContainer: {
+    marginTop: 10,
+    alignItems: 'flex-end',
+  },
+  correctFeedbackText: {
+    fontSize: 16,
+    color: '#38A169',
+    textAlign: 'right',
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  wrongFeedbackText: {
+    fontSize: 16,
+    color: '#E53E3E',
+    textAlign: 'right',
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  solutionButton: {
+    paddingVertical: 8,
+    marginTop: 5,
+  },
+  solutionButtonText: {
+    color: '#3182CE',
+    fontSize: 15,
+    textAlign: 'right',
+    fontWeight: '600',
   },
   solutionBox: {
-    backgroundColor: '#e8f5e9',
-    padding: 15,
-    borderRadius: 8,
-    marginTop: 10,
+    backgroundColor: '#EBF8FF',
+    padding: 20,
+    borderRadius: 12,
+    marginTop: 15,
+    width: '100%',
   },
   solutionBoxText: {
     fontSize: 16,
     textAlign: 'right',
-    color: '#2e7d32',
-    lineHeight: 24,
+    color: '#2C5282',
+    lineHeight: 26,
   },
 });

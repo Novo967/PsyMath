@@ -1,6 +1,11 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { initializeAuth } from 'firebase/auth';
+// @ts-ignore - Ignore the TypeScript error, this function exists in the React Native bundle
+import { getReactNativePersistence } from 'firebase/auth';
+
 // Replace this with the config you copied from Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyCq18HYBE02OUjrKlc5JgzmiMHOjMU6TjM",
@@ -13,5 +18,10 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
+
+// משתמשים ב-initializeAuth יחד עם AsyncStorage
+export const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(AsyncStorage)
+});
+
 export const db = getFirestore(app);

@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Platform, TouchableOpacity, Text, View, ActivityIndicator, I18nManager } from 'react-native';
+import { Platform, TouchableOpacity, Text, View, ActivityIndicator, I18nManager, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from './firebaseConfig';
+
+// Video & Splash imports
+import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
+import * as SplashScreen from 'expo-splash-screen';
+
 // Import Screens
 import HomeScreen from './screens/HomeScreen';
 import StudyMaterialsScreen from './screens/StudyMaterialsScreen';
@@ -12,7 +17,12 @@ import PracticeScreen from './screens/PracticeScreen';
 import SimulationScreen from './screens/SimulationScreen';
 import StatisticsScreen from './screens/StatisticsScreen';
 import SignUpScreen from './screens/SignUpScreen';
-import SimulationResultsScreen from './screens/SimulationResultsScreen'; // ודא שהנתיב לקובץ נכון
+import SimulationResultsScreen from './screens/SimulationResultsScreen'; 
+import LoginScreen from './screens/LoginScreen';
+
+// עצירת הספלאש הנייטיבי מלהיעלם אוטומטית
+SplashScreen.preventAutoHideAsync();
+
 export type RootStackParamList = {
   Home: undefined;
   StudyMaterials: undefined;
@@ -20,14 +30,18 @@ export type RootStackParamList = {
   Simulation: undefined;
   Statistics: undefined;
   SignUp: undefined;
+  Login: undefined;
+  SimulationResultsScreen: undefined; 
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 I18nManager.allowRTL(false);
 I18nManager.forceRTL(false);
+
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
+  const [isVideoFinished, setIsVideoFinished] = useState(false); // סטייט חדש לוידאו
 
   // Listen for authentication state changes
   useEffect(() => {
@@ -40,7 +54,36 @@ export default function App() {
     return unsubscribe;
   }, []);
 
-  // Show loading spinner while checking auth state
+  // ניהול מצב הנגן של הוידאו
+  const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
+    if (status.isLoaded) {
+      // ברגע שהוידאו נטען ומתחיל, מעלימים את הספלאש הנייטיבי השחור
+      SplashScreen.hideAsync();
+      
+      // כשהוידאו מסתיים
+      if (status.didJustFinish) {
+        setIsVideoFinished(true);
+      }
+    }
+  };
+
+  // 1. תצוגת הספלאש וידאו (מוצג כל עוד הוידאו לא הסתיים)
+  if (!isVideoFinished) {
+    return (
+      <View style={styles.splashContainer}>
+        <Video
+          style={{ width: 250, height: 250 }} // כאן קובעים את הגודל החדש
+          source={require('./assets/splashscreen.mp4')} 
+          resizeMode={ResizeMode.CONTAIN} // שינוי ל-CONTAIN
+          shouldPlay={true}
+          isLooping={false}
+          onPlaybackStatusUpdate={onPlaybackStatusUpdate}
+        />
+      </View>
+    );
+  }
+
+  // 2. תצוגת טעינה של Firebase (מוצגת רק אם הוידאו הסתיים אבל עדיין אין תשובה מ-Firebase)
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -49,10 +92,14 @@ export default function App() {
     );
   }
 
+  // 3. תצוגת האפליקציה הרגילה
   return (
     <NavigationContainer>
       <Stack.Navigator 
         screenOptions={({ navigation }) => ({
+          // השורה הזו עושה את כל ההבדל - מציגה באייפון ומסתירה באנדרואיד
+          headerShown: Platform.OS === 'ios', 
+          
           headerStyle: { backgroundColor: '#F8F9FA' },
           headerShadowVisible: false,
           headerTitle: '', 
@@ -63,7 +110,7 @@ export default function App() {
               return (
                 <TouchableOpacity 
                   onPress={() => navigation.goBack()} 
-                  style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}
+                  style={{ flexDirection: 'row', alignItems: 'center', paddingRight: 15 }}
                 >
                   <Text style={{ color: '#007AFF', fontSize: 16, fontWeight: '500', marginRight: 4 }}>חזור</Text>
                   <Ionicons name="chevron-forward" size={22} color="#007AFF" />
@@ -90,14 +137,29 @@ export default function App() {
           </>
         ) : (
           // Auth Stack (Guest users)
-          <Stack.Screen 
-            name="SignUp" 
-            component={SignUpScreen} 
-            options={{ headerShown: false }} // Hide header for sign up screen
-          />
+         <>
+            <Stack.Screen 
+              name="SignUp" 
+              component={SignUpScreen} 
+              options={{ headerShown: false }} 
+            />
+            <Stack.Screen 
+              name="Login" 
+              component={LoginScreen} 
+              options={{ headerShown: false }} 
+            />
+          </>
         )}
-        
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  splashContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF', 
+    justifyContent: 'center', // מרכוז אנכי
+    alignItems: 'center',     // מרכוז אופקי
+  }
+});

@@ -56,19 +56,17 @@ export default function SimulationScreen() {
         const hardQs = allQuestions.filter(q => q.difficulty === 'hard');
 
         // ערבוב ובחירת כמות ספציפית ליצירת מבחן מאוזן מדרגות קושי
-        // אם אין מספיק שאלות בדאטה בייס, הוא פשוט ייקח את מה שיש עד לכל היותר 20 שאלות יחד
         const selectedEasy = shuffleArray(easyQs).slice(0, 6);
         const selectedMedium = shuffleArray(mediumQs).slice(0, 8);
         const selectedHard = shuffleArray(hardQs).slice(0, 6);
 
         let finalQuestions = [...selectedEasy, ...selectedMedium, ...selectedHard];
 
-        // גיבוי: אם אין התפלגות קושי מושלמת והגענו לפחות מ-20, נשלים משאר השאלות (שלא נבחרו עדיין)
+        // גיבוי: אם אין התפלגות קושי מושלמת והגענו לפחות מ-20, נשלים משאר השאלות
         if (finalQuestions.length < 20 && allQuestions.length >= 20) {
            const remaining = shuffleArray(allQuestions.filter(q => !finalQuestions.find(fq => fq.id === q.id)));
            finalQuestions = [...finalQuestions, ...remaining.slice(0, 20 - finalQuestions.length)];
            
-           // נסדר מחדש מהקל לקשה במידה והשלמנו בצורה אקראית
            const diffMap: Record<string, number> = { 'easy': 1, 'medium': 2, 'hard': 3 };
            finalQuestions.sort((a, b) => (diffMap[a.difficulty] || 2) - (diffMap[b.difficulty] || 2));
         }
@@ -137,7 +135,6 @@ export default function SimulationScreen() {
     setHasSubmitted(true);
 
     try {
-      // חישוב ציון וכמות תשובות נכונות
       let correctAnswersCount = 0;
       const examResults = questions.map((q, index) => {
         const isCorrect = answers[index] === q.correctAnswerIndex;
@@ -159,11 +156,9 @@ export default function SimulationScreen() {
         results: examResults
       };
 
-      // יצירת תת-אוסף (simulations) תחת המשתמש ושמירת המבחן
       const userSimulationsRef = collection(db, 'users', auth.currentUser.uid, 'simulations');
       await addDoc(userSimulationsRef, simulationData);
 
-      // מעבר למסך תוצאות תוך העברת המידע אליו כדי להציג פתרונות בלי למשוך שוב הכל
       navigation.replace('SimulationResultsScreen', { 
         questions: questions,
         userAnswers: answers,
@@ -184,7 +179,6 @@ export default function SimulationScreen() {
   };
 
   const finishSimulation = () => {
-    // בדיקה האם יש שאלות שלא נענו
     const unansweredCount = answers.filter(a => a === null).length;
     const warningText = unansweredCount > 0 
       ? `\n\nשים לב: נותרו לך ${unansweredCount} שאלות ללא מענה!` 
@@ -192,7 +186,7 @@ export default function SimulationScreen() {
 
     Alert.alert(
       'סיום סימולציה',
-      `האם אתה בטוח שברצונך להגיש את המבחן לפני תום הזמן?${warningText}`,
+      `האם אתה בטוח שברצונך להגיש את המבחן?${warningText}`,
       [
         { text: 'ביטול', style: 'cancel' },
         { 
@@ -204,7 +198,6 @@ export default function SimulationScreen() {
     );
   };
 
-  // פונקציות ניווט בין שאלות
   const handleNext = () => {
     setCurrentQuestionIndex(prev => Math.min(questions.length, prev + 1));
   };
@@ -233,6 +226,9 @@ export default function SimulationScreen() {
   const currentQuestion = questions[currentQuestionIndex - 1];
   const progressPercentage = (currentQuestionIndex / questions.length) * 100;
   const currentAnswer = answers[currentQuestionIndex - 1];
+  
+  // משתנה עזר לבדיקה האם אנחנו בשאלה האחרונה
+  const isLastQuestion = currentQuestionIndex === questions.length;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -277,7 +273,6 @@ export default function SimulationScreen() {
                   ]}>
                     {opt}
                   </Text>
-                  {/* עיגול בחירה להמחשה ויזואלית טובה יותר */}
                   <View style={[styles.radioCircle, currentAnswer === index && styles.radioCircleSelected]} />
                 </TouchableOpacity>
               ))}
@@ -303,20 +298,26 @@ export default function SimulationScreen() {
               <Text style={[styles.actionButtonText, styles.prevButtonText]}>הקודם</Text>
             </TouchableOpacity>
 
+            {/* כפתור "הבא" שהופך ל"הגשה" בשאלה האחרונה */}
             <TouchableOpacity 
-              style={[styles.actionButton, currentQuestionIndex === questions.length && styles.disabledButton]} 
+              style={[
+                styles.actionButton, 
+                isLastQuestion && { backgroundColor: '#48BB78', shadowColor: '#48BB78' } 
+              ]} 
               activeOpacity={0.8}
-              onPress={handleNext}
-              disabled={currentQuestionIndex === questions.length}
+              onPress={isLastQuestion ? finishSimulation : handleNext}
             >
-              <Text style={styles.actionButtonText}>הבא</Text>
-              <Ionicons name="chevron-back" size={20} color="#FFF" style={{ marginLeft: 4 }} />
+              <Text style={styles.actionButtonText}>
+                {isLastQuestion ? 'הגש סימולציה' : 'הבא'}
+              </Text>
+              <Ionicons 
+                name={isLastQuestion ? "checkmark-outline" : "chevron-back"} 
+                size={20} 
+                color="#FFF" 
+                style={{ marginLeft: 4 }} 
+              />
             </TouchableOpacity>
           </View>
-          
-          <TouchableOpacity style={styles.submitButton} onPress={finishSimulation}>
-            <Text style={styles.submitButtonText}>סיום והגשת סימולציה</Text>
-          </TouchableOpacity>
         </View>
 
       </View>
@@ -325,202 +326,33 @@ export default function SimulationScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  topStatus: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 15,
-  },
-  timeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  timerText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#4A5568',
-    marginLeft: 6,
-  },
-  timerWarning: {
-    color: '#E53E3E',
-  },
-  progressText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#718096',
-  },
-  progressBarBackground: {
-    height: 6,
-    backgroundColor: '#E2E8F0',
-    borderRadius: 3,
-    marginBottom: 15,
-    overflow: 'hidden',
-    flexDirection: 'row-reverse',
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: '#4A90E2',
-    borderRadius: 3,
-  },
-  questionScroll: {
-    flex: 1,
-  },
-  questionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.05,
-    shadowRadius: 15,
-    elevation: 3,
-    marginBottom: 10,
-  },
-  topicBadge: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#EBF4FF',
-    color: '#4A90E2',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 15,
-    overflow: 'hidden',
-  },
-  questionText: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#2D3748',
-    textAlign: 'right',
-    marginBottom: 30,
-    lineHeight: 30,
-  },
-  optionsContainer: {
-    width: '100%',
-    marginBottom: 30,
-  },
-  optionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    backgroundColor: '#F7FAFC',
-    borderWidth: 2,
-    borderColor: '#EDF2F7',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-  },
-  selectedOption: {
-    backgroundColor: '#EBF4FF',
-    borderColor: '#4A90E2',
-  },
-  optionText: {
-    fontSize: 16,
-    color: '#4A5568',
-    textAlign: 'right',
-    marginRight: 15,
-    flex: 1,
-  },
-  selectedOptionText: {
-    color: '#2B6CB0',
-    fontWeight: '600',
-  },
-  radioCircle: {
-    height: 20,
-    width: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#CBD5E0',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioCircleSelected: {
-    borderColor: '#4A90E2',
-    borderWidth: 5, // הופך את העיגול למלא באמצע
-  },
-  infoBox: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    backgroundColor: '#F7FAFC',
-    padding: 15,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#718096',
-    textAlign: 'right',
-    marginRight: 10,
-    flex: 1,
-  },
-  bottomControls: {
-    paddingBottom: 30,
-    paddingTop: 10,
-  },
-  navRow: {
-    flexDirection: 'row-reverse', 
-    justifyContent: 'space-between',
-    marginBottom: 15,
-    gap: 12, 
-  },
-  actionButton: {
-    flex: 1, 
-    backgroundColor: '#4A90E2',
-    flexDirection: 'row-reverse',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderRadius: 14,
-    shadowColor: '#4A90E2',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  prevButton: {
-    backgroundColor: '#EBF4FF', 
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  actionButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  prevButtonText: {
-    color: '#4A90E2',
-  },
-  disabledButton: {
-    opacity: 0.4, 
-  },
-  submitButton: {
-    backgroundColor: 'transparent',
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  submitButtonText: {
-    color: '#A0AEC0',
-    fontSize: 16,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
-  },
+  safeArea: { flex: 1, backgroundColor: '#F8F9FA' },
+  container: { flex: 1, paddingHorizontal: 20, paddingTop: 40 },
+  topStatus: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15 },
+  timeContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
+  timerText: { fontSize: 16, fontWeight: '700', color: '#4A5568', marginLeft: 6 },
+  timerWarning: { color: '#E53E3E' },
+  progressText: { fontSize: 15, fontWeight: '600', color: '#718096' },
+  progressBarBackground: { height: 6, backgroundColor: '#E2E8F0', borderRadius: 3, marginBottom: 15, overflow: 'hidden', flexDirection: 'row-reverse' },
+  progressBarFill: { height: '100%', backgroundColor: '#4A90E2', borderRadius: 3 },
+  questionScroll: { flex: 1 },
+  questionCard: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.05, shadowRadius: 15, elevation: 3, marginBottom: 10 },
+  topicBadge: { alignSelf: 'flex-end', backgroundColor: '#EBF4FF', color: '#4A90E2', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, fontSize: 12, fontWeight: '600', marginBottom: 15, overflow: 'hidden' },
+  questionText: { fontSize: 20, fontWeight: '700', color: '#2D3748', textAlign: 'right', marginBottom: 30, lineHeight: 30 },
+  optionsContainer: { width: '100%', marginBottom: 30 },
+  optionButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', backgroundColor: '#F7FAFC', borderWidth: 2, borderColor: '#EDF2F7', borderRadius: 12, padding: 16, marginBottom: 12 },
+  selectedOption: { backgroundColor: '#EBF4FF', borderColor: '#4A90E2' },
+  optionText: { fontSize: 16, color: '#4A5568', textAlign: 'right', marginRight: 15, flex: 1 },
+  selectedOptionText: { color: '#2B6CB0', fontWeight: '600' },
+  radioCircle: { height: 20, width: 20, borderRadius: 10, borderWidth: 2, borderColor: '#CBD5E0', alignItems: 'center', justifyContent: 'center' },
+  radioCircleSelected: { borderColor: '#4A90E2', borderWidth: 5 },
+  infoBox: { flexDirection: 'row-reverse', alignItems: 'center', backgroundColor: '#F7FAFC', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0' },
+  infoText: { fontSize: 14, color: '#718096', textAlign: 'right', marginRight: 10, flex: 1 },
+  bottomControls: { paddingBottom: 40, paddingTop: 10 },
+  navRow: { flexDirection: 'row-reverse', justifyContent: 'space-between', marginBottom: 15, gap: 12 },
+  actionButton: { flex: 1, backgroundColor: '#4A90E2', flexDirection: 'row-reverse', justifyContent: 'center', alignItems: 'center', paddingVertical: 14, borderRadius: 14, shadowColor: '#4A90E2', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 6, elevation: 3 },
+  prevButton: { backgroundColor: '#EBF4FF', shadowOpacity: 0, elevation: 0 },
+  actionButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  prevButtonText: { color: '#4A90E2' },
+  disabledButton: { opacity: 0.4 },
 });

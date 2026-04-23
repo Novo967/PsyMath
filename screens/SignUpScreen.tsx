@@ -11,31 +11,29 @@ export default function SignUpScreen() {
   const navigation = useNavigation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState(''); // הוספת שדה אימות סיסמה
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   // הגדרת Google Sign-In כשהמסך נטען
   useEffect(() => {
     GoogleSignin.configure({
-      // הדבק כאן את ה-Web Client ID שהעתקת מפיירבייס!
       webClientId: '493324822355-7hd2is082s1oqv8mjkuk6t1krbsvsv0a.apps.googleusercontent.com',
     });
   }, []);
 
   // פונקציית עזר: יצירת/עדכון מסמך משתמש ב-Firestore
-  // שומר על מודל ה-Freemium שתכננו
   const createUserDocument = async (user: any) => {
     const userRef = doc(db, 'users', user.uid);
     const docSnap = await getDoc(userRef);
 
-    // יוצר מסמך רק אם המשתמש לא קיים (כדי לא לדרוס נתוני מנוי קיימים בהתחברות חוזרת)
     if (!docSnap.exists()) {
       await setDoc(userRef, {
         email: user.email,
         name: user.displayName || '',
-        isPremium: false, // ברירת מחדל: משתמש חינמי
+        isPremium: false,
         questionsSolvedToday: 0,
-        dailyLimit: 10, // ההגבלה שביקשת
+        dailyLimit: 10,
         lastQuestionDate: new Date().toISOString(),
         createdAt: new Date().toISOString(),
       });
@@ -44,8 +42,13 @@ export default function SignUpScreen() {
 
   // 1. הרשמה קלאסית: אימייל וסיסמה
   const handleEmailSignUp = async () => {
-    if (!email || !password) {
-      Alert.alert('שגיאה', 'אנא מלא אימייל וסיסמה');
+    if (!email || !password || !confirmPassword) {
+      Alert.alert('שגיאה', 'אנא מלא את כל השדות');
+      return;
+    }
+
+    if (password !== confirmPassword) { // בדיקת התאמת סיסמאות
+      Alert.alert('שגיאה', 'הסיסמאות אינן תואמות');
       return;
     }
 
@@ -54,9 +57,13 @@ export default function SignUpScreen() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await createUserDocument(userCredential.user);
       Alert.alert('בהצלחה!', 'החשבון נוצר בהצלחה.');
-      // navigation.navigate('Home'); // בעתיד תעביר למסך הבית
     } catch (error: any) {
-      Alert.alert('שגיאת הרשמה', error.message);
+      // טיפול ספציפי למקרה שהמייל כבר רשום
+      if (error.code === 'auth/email-already-in-use') {
+        Alert.alert('שגיאה', 'המייל הזה כבר רשום במערכת. לחץ על הקישור למטה כדי להתחבר.');
+      } else {
+        Alert.alert('שגיאת הרשמה', error.message);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -66,24 +73,17 @@ export default function SignUpScreen() {
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     try {
-      // מוודא ששירותי גוגל זמינים
       await GoogleSignin.hasPlayServices();
-      
-      // מקבל את אישור ההתחברות מגוגל
       const userInfo = await GoogleSignin.signIn();
       const idToken = userInfo.data?.idToken;
 
       if (!idToken) throw new Error('No ID token found');
 
-      // מחבר את אישור הגוגל לפיירבייס שלנו
       const googleCredential = GoogleAuthProvider.credential(idToken);
       const userCredential = await signInWithCredential(auth, googleCredential);
 
-      // שומר את נתוני המנוי ב-Firestore
       await createUserDocument(userCredential.user);
 
-      Alert.alert('בהצלחה!', 'התחברת בהצלחה עם Google!');
-      // navigation.navigate('Home');
     } catch (error: any) {
       console.error('Google Sign-In Error:', error);
       Alert.alert('שגיאה', 'לא הצלחנו להתחבר דרך גוגל.');
@@ -111,13 +111,12 @@ export default function SignUpScreen() {
               <ActivityIndicator color="#333" />
             ) : (
               <>
-                <Ionicons name="logo-google" size={20} color="#DB4437" />
+                <Ionicons name="logo-google" size={20} color="#4181ef" />
                 <Text style={styles.googleButtonText}>המשך עם Google</Text>
               </>
             )}
           </TouchableOpacity>
 
-          {/* מפריד */}
           <View style={styles.dividerContainer}>
             <View style={styles.divider} />
             <Text style={styles.dividerText}>או</Text>
@@ -150,6 +149,19 @@ export default function SignUpScreen() {
             />
           </View>
 
+          {/* שדה חדש: אימות סיסמה */}
+          <View style={styles.inputContainer}>
+            <Ionicons name="checkmark-circle-outline" size={20} color="#718096" style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="אימות סיסמה"
+              secureTextEntry
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              textAlign="right"
+            />
+          </View>
+
           <TouchableOpacity 
             style={styles.submitButton} 
             onPress={handleEmailSignUp} 
@@ -160,6 +172,14 @@ export default function SignUpScreen() {
             ) : (
               <Text style={styles.submitButtonText}>הרשמה עם אימייל</Text>
             )}
+          </TouchableOpacity>
+
+          {/* כפתור מעבר למסך התחברות למשתמשים קיימים */}
+          <TouchableOpacity 
+            style={styles.loginLinkContainer} 
+            onPress={() => navigation.navigate('Login' as never)}
+          >
+            <Text style={styles.loginLinkText}>כבר יש לך חשבון? התחבר כאן</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -220,4 +240,13 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   submitButtonText: { color: '#FFF', fontSize: 18, fontWeight: '700' },
+  loginLinkContainer: {
+    marginTop: 15,
+    alignItems: 'center',
+  },
+  loginLinkText: {
+    color: '#4A90E2',
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });
