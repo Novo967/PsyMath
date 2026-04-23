@@ -47,12 +47,12 @@ export default function StudyMaterialsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#9dbde9',
   },
   container: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: 60,
   },
   headerContainer: {
     marginBottom: 30,
@@ -61,12 +61,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#1A202C',
+    color: '#ffffff',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#718096',
+    color: '#ffffff',
   },
   listContainer: {
     paddingBottom: 20,

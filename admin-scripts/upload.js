@@ -1,6 +1,6 @@
 const admin = require('firebase-admin');
 const serviceAccount = require('./serviceAccountKey.json');
-const data = require('./questions8.json');
+const data = require('./questions9.json');
 
 // אתחול החיבור לפיירבייס
 admin.initializeApp({

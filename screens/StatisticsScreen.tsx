@@ -231,7 +231,6 @@ export default function StatisticsScreen() {
         <View ref={viewToSnapshotRef} collapsable={false} style={styles.shareContainer}>
           <View style={styles.shareCardHeader}>
             <Text style={styles.shareCardTitle}>ההתקדמות שלי 🔥</Text>
-            <Text style={styles.appName}>PsyMath</Text>
           </View>
 
           {(showAccuracy || showQuestions) && (
@@ -475,7 +474,6 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
   },
   shareCardTitle: { fontSize: 20, fontWeight: '800', color: '#2D3748' },
-  appName: { fontSize: 16, fontWeight: '600', color: '#4A90E2', opacity: 0.7 },
   statsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
