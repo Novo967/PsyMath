@@ -7,6 +7,7 @@ import {
   Alert,
   Animated,
   Dimensions,
+  Linking,
   Modal,
   SafeAreaView,
   ScrollView,
@@ -32,6 +33,7 @@ interface Props {
 export default function HomeScreen({ navigation }: Props) {
   const [isMenuVisible, setMenuVisible] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
+  const [userName, setUserName] = useState("חבר"); // <-- סטייט לשם המשתמש
 
   // הגדרת משתנה האנימציה - התפריט מתחיל מחוץ למסך מצד ימין (ברוחב המסך)
   const slideAnim = useRef(new Animated.Value(width)).current;
@@ -39,6 +41,11 @@ export default function HomeScreen({ navigation }: Props) {
   useEffect(() => {
     const fetchUserData = async () => {
       if (auth.currentUser) {
+        // משיכת שם המשתמש מהאותנטיקציה (אם קיים) - אחרת נשאר "חבר"
+        if (auth.currentUser.displayName) {
+          setUserName(auth.currentUser.displayName);
+        }
+
         try {
           const userRef = doc(db, "users", auth.currentUser.uid);
           const userSnap = await getDoc(userRef);
@@ -54,6 +61,11 @@ export default function HomeScreen({ navigation }: Props) {
   const handleNavigation = async (screenName: keyof RootStackParamList) => {
     if (!auth.currentUser) return;
 
+    // --- זמנית לגרסה החינמית: נאפשר גישה לכל המסכים ללא הגבלה ---
+    navigation.navigate(screenName as any);
+    return;
+
+    /* --- קוד מקורי לפרימיום (שמור לעתיד כשתרצה להחזיר את מודל התשלום) ---
     if (screenName === "Practice" || screenName === "Statistics") {
       navigation.navigate(screenName as any);
       return;
@@ -83,6 +95,7 @@ export default function HomeScreen({ navigation }: Props) {
       console.error("Error checking premium status:", error);
       Alert.alert("שגיאה", "לא הצלחנו לאמת את סטטוס המנוי שלך.");
     }
+    ------------------------------------------------------------------ */
   };
 
   // פונקציה לפתיחת התפריט עם אנימציה
@@ -135,18 +148,14 @@ export default function HomeScreen({ navigation }: Props) {
                 const uid = auth.currentUser.uid;
                 const userRef = doc(db, "users", uid);
 
-                // שלב 1: מחיקת הנתונים מ-Firestore (חשוב לעשות לפני מחיקת היוזר באותנטיקציה בגלל חוקי אבטחה)
+                // שלב 1: מחיקת הנתונים מ-Firestore
                 await deleteDoc(userRef);
 
                 // שלב 2: מחיקת המשתמש מ-Firebase Auth
                 await deleteUser(auth.currentUser);
-
-                // הערה: ברגע שהמשתמש נמחק, ה-onAuthStateChanged באפליקציה שלך
-                // אמור לזהות שאין משתמש ולהעביר אותך אוטומטית למסך ההתחברות.
               } catch (error: any) {
                 console.error("Delete account error:", error);
 
-                // Firebase דורש לפעמים התחברות טרייה כדי למחוק חשבון מטעמי אבטחה
                 if (error.code === "auth/requires-recent-login") {
                   Alert.alert(
                     "נדרש אימות מחדש",
@@ -169,14 +178,18 @@ export default function HomeScreen({ navigation }: Props) {
   const handleMenuPress = (action: string) => {
     closeMenu(() => {
       switch (action) {
+        /* זמנית בהערה - נחזיר בגרסת הפרימיום
         case "premium":
           console.log("Navigate to Premium logic");
           break;
+        */
         case "policy":
-          console.log("Navigate to Policy");
+          Linking.openURL("https://novo967.github.io/Camuty-landing-page/");
           break;
         case "contact":
-          console.log("Navigate to Contact Us");
+          Linking.openURL(
+            "https://novo967.github.io/Camuty-landing-page/contact.html",
+          );
           break;
         default:
           break;
@@ -198,7 +211,7 @@ export default function HomeScreen({ navigation }: Props) {
 
         <View style={styles.headerContainer}>
           <Text style={styles.title}>הכנה כמותית לפסיכומטרי</Text>
-          <Text style={styles.subtitle}>בחר את אופן הלמידה שלך להיום</Text>
+          <Text style={styles.subtitle}>שלום {userName}, מה נלמד היום?</Text>
         </View>
 
         <View style={styles.cardsContainer}>
@@ -285,6 +298,7 @@ export default function HomeScreen({ navigation }: Props) {
               <Text style={styles.menuHeaderText}>הגדרות</Text>
             </View>
 
+            {/* זמנית בהערה עד לשחרור גרסת הפרימיום
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => handleMenuPress("premium")}
@@ -294,6 +308,7 @@ export default function HomeScreen({ navigation }: Props) {
                 {isPremium ? "ניהול מנוי פרימיום" : "שדרוג לפרימיום"}
               </Text>
             </TouchableOpacity>
+            */}
 
             <TouchableOpacity
               style={styles.menuItem}
