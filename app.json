@@ -26,6 +26,7 @@
     },
     "plugins": [
       [
+        "./withAndroidAsset.js",
         "expo-splash-screen",
         {
           "image": "./assets/images/blank.png",
