@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "כמותי לפסיכומטרי",
+    "name": "כמותי",
     "slug": "psychometric-mathematics",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -15,7 +15,6 @@
       "adaptiveIcon": {
         "backgroundColor": "#ffffff",
         "foregroundImage": "./assets/images/icon.png"
-        
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,

@@ -1,24 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import { Platform, TouchableOpacity, Text, View, ActivityIndicator, I18nManager, StyleSheet } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Ionicons } from '@expo/vector-icons';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from './firebaseConfig';
+import { Ionicons } from "@expo/vector-icons";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { onAuthStateChanged, User } from "firebase/auth";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  I18nManager,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { auth } from "./firebaseConfig";
 
 // Video & Splash imports
-import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
-import * as SplashScreen from 'expo-splash-screen';
+import { AVPlaybackStatus, ResizeMode, Video } from "expo-av";
+import * as SplashScreen from "expo-splash-screen";
 
 // Import Screens
-import HomeScreen from './screens/HomeScreen';
-import StudyMaterialsScreen from './screens/StudyMaterialsScreen';
-import PracticeScreen from './screens/PracticeScreen';
-import SimulationScreen from './screens/SimulationScreen';
-import StatisticsScreen from './screens/StatisticsScreen';
-import SignUpScreen from './screens/SignUpScreen';
-import SimulationResultsScreen from './screens/SimulationResultsScreen'; 
-import LoginScreen from './screens/LoginScreen';
+import HomeScreen from "./screens/HomeScreen";
+import LoginScreen from "./screens/LoginScreen";
+import PracticeScreen from "./screens/PracticeScreen";
+import SignUpScreen from "./screens/SignUpScreen";
+import SimulationResultsScreen from "./screens/SimulationResultsScreen";
+import SimulationScreen from "./screens/SimulationScreen";
+import StatisticsScreen from "./screens/StatisticsScreen";
+import StudyMaterialsScreen from "./screens/StudyMaterialsScreen";
 
 // עצירת הספלאש הנייטיבי מלהיעלם אוטומטית
 SplashScreen.preventAutoHideAsync();
@@ -31,7 +39,7 @@ export type RootStackParamList = {
   Statistics: undefined;
   SignUp: undefined;
   Login: undefined;
-  SimulationResultsScreen: undefined; 
+  SimulationResultsScreen: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -46,11 +54,25 @@ export default function App() {
   // Listen for authentication state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+      if (currentUser) {
+        // בודקים אם המשתמש נרשם עם אימייל וסיסמה
+        const isEmailProvider = currentUser.providerData.some(
+          (provider) => provider.providerId === "password",
+        );
+
+        // אם זה משתמש אימייל והוא עדיין לא מאומת, נתייחס אליו כאל מנותק
+        if (isEmailProvider && !currentUser.emailVerified) {
+          setUser(null);
+        } else {
+          // משתמש מאומת או משתמש שנכנס דרך גוגל
+          setUser(currentUser);
+        }
+      } else {
+        setUser(null);
+      }
       setIsLoading(false);
     });
 
-    // Cleanup subscription on unmount
     return unsubscribe;
   }, []);
 
@@ -59,7 +81,7 @@ export default function App() {
     if (status.isLoaded) {
       // ברגע שהוידאו נטען ומתחיל, מעלימים את הספלאש הנייטיבי השחור
       SplashScreen.hideAsync();
-      
+
       // כשהוידאו מסתיים
       if (status.didJustFinish) {
         setIsVideoFinished(true);
@@ -73,7 +95,7 @@ export default function App() {
       <View style={styles.splashContainer}>
         <Video
           style={{ width: 250, height: 250 }} // כאן קובעים את הגודל החדש
-          source={require('./assets/splashscreen.mp4')} 
+          source={require("./assets/splashscreen.mp4")}
           resizeMode={ResizeMode.CONTAIN} // שינוי ל-CONTAIN
           shouldPlay={true}
           isLooping={false}
@@ -86,7 +108,7 @@ export default function App() {
   // 2. תצוגת טעינה של Firebase (מוצגת רק אם הוידאו הסתיים אבל עדיין אין תשובה מ-Firebase)
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" color="#4A90E2" />
       </View>
     );
@@ -95,58 +117,74 @@ export default function App() {
   // 3. תצוגת האפליקציה הרגילה
   return (
     <NavigationContainer>
-      <Stack.Navigator 
+      <Stack.Navigator
         screenOptions={({ navigation }) => ({
           // השורה הזו עושה את כל ההבדל - מציגה באייפון ומסתירה באנדרואיד
-          headerShown: Platform.OS === 'ios', 
-          
-          headerStyle: { backgroundColor: '#F8F9FA' },
+          headerShown: Platform.OS === "ios",
+
+          headerStyle: { backgroundColor: "#F8F9FA" },
           headerShadowVisible: false,
-          headerTitle: '', 
+          headerTitle: "",
           headerBackVisible: false,
           headerLeft: () => null,
           headerRight: () => {
-            if (Platform.OS === 'ios' && navigation.canGoBack()) {
+            if (Platform.OS === "ios" && navigation.canGoBack()) {
               return (
-                <TouchableOpacity 
-                  onPress={() => navigation.goBack()} 
-                  style={{ flexDirection: 'row', alignItems: 'center', paddingRight: 15 }}
+                <TouchableOpacity
+                  onPress={() => navigation.goBack()}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingRight: 15,
+                  }}
                 >
-                  <Text style={{ color: '#007AFF', fontSize: 16, fontWeight: '500', marginRight: 4 }}>חזור</Text>
+                  <Text
+                    style={{
+                      color: "#007AFF",
+                      fontSize: 16,
+                      fontWeight: "500",
+                      marginRight: 4,
+                    }}
+                  >
+                    חזור
+                  </Text>
                   <Ionicons name="chevron-forward" size={22} color="#007AFF" />
                 </TouchableOpacity>
               );
             }
             return null;
-          }
+          },
         })}
       >
         {user ? (
           // App Stack (Authenticated users)
           <>
             <Stack.Screen name="Home" component={HomeScreen} />
-            <Stack.Screen name="StudyMaterials" component={StudyMaterialsScreen} />
+            <Stack.Screen
+              name="StudyMaterials"
+              component={StudyMaterialsScreen}
+            />
             <Stack.Screen name="Practice" component={PracticeScreen} />
             <Stack.Screen name="Simulation" component={SimulationScreen} />
             <Stack.Screen name="Statistics" component={StatisticsScreen} />
-            <Stack.Screen 
-              name="SimulationResultsScreen" 
-              component={SimulationResultsScreen} 
-              options={{ title: 'תוצאות המבחן' }} 
+            <Stack.Screen
+              name="SimulationResultsScreen"
+              component={SimulationResultsScreen}
+              options={{ title: "תוצאות המבחן" }}
             />
           </>
         ) : (
           // Auth Stack (Guest users)
-         <>
-            <Stack.Screen 
-              name="SignUp" 
-              component={SignUpScreen} 
-              options={{ headerShown: false }} 
+          <>
+            <Stack.Screen
+              name="SignUp"
+              component={SignUpScreen}
+              options={{ headerShown: false }}
             />
-            <Stack.Screen 
-              name="Login" 
-              component={LoginScreen} 
-              options={{ headerShown: false }} 
+            <Stack.Screen
+              name="Login"
+              component={LoginScreen}
+              options={{ headerShown: false }}
             />
           </>
         )}
@@ -158,8 +196,8 @@ export default function App() {
 const styles = StyleSheet.create({
   splashContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF', 
-    justifyContent: 'center', // מרכוז אנכי
-    alignItems: 'center',     // מרכוז אופקי
-  }
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center", // מרכוז אנכי
+    alignItems: "center", // מרכוז אופקי
+  },
 });
