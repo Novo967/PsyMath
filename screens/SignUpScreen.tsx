@@ -7,6 +7,7 @@ import {
   sendEmailVerification,
   signInWithCredential,
   signOut,
+  updateProfile, // <-- הוספנו את הפונקציה הזו
 } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
@@ -29,6 +30,7 @@ import { auth, db } from "../firebaseConfig";
 
 export default function SignUpScreen() {
   const navigation = useNavigation();
+  const [name, setName] = useState(""); // <-- סטייט חדש לשם הפרטי
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -44,14 +46,15 @@ export default function SignUpScreen() {
     });
   }, []);
 
-  const createUserDocument = async (user: any) => {
+  // הוספנו פרמטר אופציונלי לשם למקרה שזה הרשמה במייל
+  const createUserDocument = async (user: any, fallbackName?: string) => {
     const userRef = doc(db, "users", user.uid);
     const docSnap = await getDoc(userRef);
 
     if (!docSnap.exists()) {
       await setDoc(userRef, {
         email: user.email,
-        name: user.displayName || "",
+        name: user.displayName || fallbackName || "", // <-- שימוש בשם
         isPremium: false,
         questionsSolvedToday: 0,
         dailyLimit: 10,
@@ -62,8 +65,9 @@ export default function SignUpScreen() {
   };
 
   const handleEmailSignUp = async () => {
-    if (!email || !password || !confirmPassword) {
-      Alert.alert("שגיאה", "אנא מלא את כל השדות");
+    // עדכנו את הבדיקה כך שתכלול גם את השם
+    if (!name || !email || !password || !confirmPassword) {
+      Alert.alert("שגיאה", "אנא מלא את כל השדות (כולל שם פרטי)");
       return;
     }
 
@@ -76,6 +80,7 @@ export default function SignUpScreen() {
     let userCreated = false;
 
     try {
+      // 1. יצירת המשתמש
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -83,8 +88,14 @@ export default function SignUpScreen() {
       );
       userCreated = true;
 
+      // 2. עדכון הפרופיל בפיירבייס Auth עם השם
+      await updateProfile(userCredential.user, {
+        displayName: name,
+      });
+
+      // 3. שליחת אימות ושמירת המסמך ב-Firestore
       await sendEmailVerification(userCredential.user);
-      await createUserDocument(userCredential.user);
+      await createUserDocument(userCredential.user, name); // מעבירים את השם כדי להבטיח שהוא נשמר
 
       Alert.alert(
         "החשבון נוצר בהצלחה!",
@@ -175,6 +186,23 @@ export default function SignUpScreen() {
                 <View style={styles.divider} />
                 <Text style={styles.dividerText}>או</Text>
                 <View style={styles.divider} />
+              </View>
+
+              {/* --- שדה השם הפרטי --- */}
+              <View style={styles.inputContainer}>
+                <Ionicons
+                  name="person-outline"
+                  size={20}
+                  color="#718096"
+                  style={styles.icon}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="שם פרטי"
+                  value={name}
+                  onChangeText={setName}
+                  textAlign="right"
+                />
               </View>
 
               <View style={styles.inputContainer}>

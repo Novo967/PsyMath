@@ -122,7 +122,7 @@ export default function App() {
           // השורה הזו עושה את כל ההבדל - מציגה באייפון ומסתירה באנדרואיד
           headerShown: Platform.OS === "ios",
 
-          headerStyle: { backgroundColor: "#F8F9FA" },
+          headerStyle: { backgroundColor: "#9dbde9" },
           headerShadowVisible: false,
           headerTitle: "",
           headerBackVisible: false,
