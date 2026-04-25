@@ -132,23 +132,28 @@ export default function App() {
               return (
                 <TouchableOpacity
                   onPress={() => navigation.goBack()}
+                  activeOpacity={0.0}
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
-                    paddingRight: 10,
+                    backgroundColor: "transparent",
                   }}
                 >
                   <Text
                     style={{
                       color: "#007AFF",
-                      fontSize: 16,
-                      fontWeight: "500",
-                      marginRight: 4,
+                      fontSize: 17, // גודל 17 הוא הסטנדרט של אפל לכפתורי ניווט
+                      fontWeight: "400", // עדיף משקל רגיל כדי שיראה טבעי יותר
                     }}
                   >
                     חזור
                   </Text>
-                  <Ionicons name="chevron-forward" size={22} color="#007AFF" />
+                  <Ionicons
+                    name="chevron-forward"
+                    size={24} // מומלץ גודל קצת יותר גדול לחץ שיתאים לגודל הטקסט
+                    color="#007AFF"
+                    style={{ marginLeft: 0 }} // נותן ריווח קטן ומדויק בין המילה לחץ
+                  />
                 </TouchableOpacity>
               );
             }
