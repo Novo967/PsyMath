@@ -43,6 +43,8 @@ export default function SignUpScreen() {
     GoogleSignin.configure({
       webClientId:
         "493324822355-7hd2is082s1oqv8mjkuk6t1krbsvsv0a.apps.googleusercontent.com",
+      iosClientId:
+        "93324822355-sev2gl1gbn216thd3sa71k4s63lasv28.apps.googleusercontent.com",
     });
   }, []);
 

@@ -2,7 +2,7 @@
   "expo": {
     "name": "כמותי",
     "slug": "psychometric-mathematics",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "psychometricmathematics",
@@ -10,7 +10,19 @@
     "newArchEnabled": true,
     "ios": {
       "bundleIdentifier": "com.novrubin.psychometricmathematics",
-      "supportsTablet": true
+      "buildNumber": "2",
+      "supportsTablet": true,
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.493324822355-sev2gl1gbn216thd3sa71k4s63lasv28"
+            ]
+          }
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
