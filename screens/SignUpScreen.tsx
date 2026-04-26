@@ -1,13 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { useNavigation } from "@react-navigation/native";
+import * as AppleAuthentication from "expo-apple-authentication"; // <-- הוספנו את ספריית אפל
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
+  OAuthProvider, // <-- הוספנו עבור אפל
   sendEmailVerification,
   signInWithCredential,
   signOut,
-  updateProfile, // <-- הוספנו את הפונקציה הזו
+  updateProfile,
 } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
@@ -30,12 +32,13 @@ import { auth, db } from "../firebaseConfig";
 
 export default function SignUpScreen() {
   const navigation = useNavigation();
-  const [name, setName] = useState(""); // <-- סטייט חדש לשם הפרטי
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isAppleLoading, setIsAppleLoading] = useState(false); // <-- סטייט לטעינה של אפל
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -48,7 +51,6 @@ export default function SignUpScreen() {
     });
   }, []);
 
-  // הוספנו פרמטר אופציונלי לשם למקרה שזה הרשמה במייל
   const createUserDocument = async (user: any, fallbackName?: string) => {
     const userRef = doc(db, "users", user.uid);
     const docSnap = await getDoc(userRef);
@@ -56,7 +58,7 @@ export default function SignUpScreen() {
     if (!docSnap.exists()) {
       await setDoc(userRef, {
         email: user.email,
-        name: user.displayName || fallbackName || "", // <-- שימוש בשם
+        name: user.displayName || fallbackName || "",
         isPremium: false,
         questionsSolvedToday: 0,
         dailyLimit: 10,
@@ -67,7 +69,6 @@ export default function SignUpScreen() {
   };
 
   const handleEmailSignUp = async () => {
-    // עדכנו את הבדיקה כך שתכלול גם את השם
     if (!name || !email || !password || !confirmPassword) {
       Alert.alert("שגיאה", "אנא מלא את כל השדות (כולל שם פרטי)");
       return;
@@ -82,7 +83,6 @@ export default function SignUpScreen() {
     let userCreated = false;
 
     try {
-      // 1. יצירת המשתמש
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -90,14 +90,12 @@ export default function SignUpScreen() {
       );
       userCreated = true;
 
-      // 2. עדכון הפרופיל בפיירבייס Auth עם השם
       await updateProfile(userCredential.user, {
         displayName: name,
       });
 
-      // 3. שליחת אימות ושמירת המסמך ב-Firestore
       await sendEmailVerification(userCredential.user);
-      await createUserDocument(userCredential.user, name); // מעבירים את השם כדי להבטיח שהוא נשמר
+      await createUserDocument(userCredential.user, name);
 
       Alert.alert(
         "החשבון נוצר בהצלחה!",
@@ -151,6 +149,49 @@ export default function SignUpScreen() {
     }
   };
 
+  // --- לוגיקת ההתחברות של אפל ---
+  const handleAppleSignIn = async () => {
+    setIsAppleLoading(true);
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      if (!credential.identityToken) {
+        throw new Error("No identity token provided by Apple");
+      }
+
+      const provider = new OAuthProvider("apple.com");
+      const authCredential = provider.credential({
+        idToken: credential.identityToken,
+      });
+
+      const userCredential = await signInWithCredential(auth, authCredential);
+
+      // חילוץ שם המשתמש (אפל שולחת את זה רק בהתחברות הראשונה אי פעם!)
+      let fallbackName = "";
+      if (credential.fullName) {
+        const givenName = credential.fullName.givenName || "";
+        const familyName = credential.fullName.familyName || "";
+        fallbackName = `${givenName} ${familyName}`.trim();
+      }
+
+      await createUserDocument(userCredential.user, fallbackName);
+    } catch (error: any) {
+      if (error.code === "ERR_REQUEST_CANCELED") {
+        console.log("Apple sign-in was canceled by the user");
+      } else {
+        console.error("Apple Sign-In Error:", error);
+        Alert.alert("שגיאה", "לא הצלחנו להתחבר דרך אפל.");
+      }
+    } finally {
+      setIsAppleLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
@@ -169,10 +210,36 @@ export default function SignUpScreen() {
             </View>
 
             <View style={styles.form}>
+              {/* --- כפתור התחברות עם אפל (יוצג רק ב-iOS) --- */}
+              {Platform.OS === "ios" && (
+                <View style={styles.appleButtonWrapper}>
+                  {isAppleLoading ? (
+                    <View
+                      style={[styles.googleButton, { borderColor: "#000" }]}
+                    >
+                      <ActivityIndicator color="#000" />
+                    </View>
+                  ) : (
+                    <AppleAuthentication.AppleAuthenticationButton
+                      buttonType={
+                        AppleAuthentication.AppleAuthenticationButtonType
+                          .SIGN_IN
+                      }
+                      buttonStyle={
+                        AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+                      }
+                      cornerRadius={12}
+                      style={styles.appleButton}
+                      onPress={handleAppleSignIn}
+                    />
+                  )}
+                </View>
+              )}
+
               <TouchableOpacity
                 style={styles.googleButton}
                 onPress={handleGoogleSignIn}
-                disabled={isGoogleLoading}
+                disabled={isGoogleLoading || isAppleLoading}
               >
                 {isGoogleLoading ? (
                   <ActivityIndicator color="#333" />
@@ -322,6 +389,14 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: "800", color: "#2D3748", marginBottom: 8 },
   subtitle: { fontSize: 16, color: "#718096" },
   form: { gap: 16 },
+  appleButtonWrapper: {
+    width: "100%",
+    height: 56,
+  },
+  appleButton: {
+    width: "100%",
+    height: "100%",
+  },
   googleButton: {
     flexDirection: "row",
     alignItems: "center",
