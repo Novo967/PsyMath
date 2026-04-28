@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { deleteUser, signOut } from "firebase/auth";
-import { deleteDoc, doc, getDoc } from "firebase/firestore";
-import React, { useEffect, useRef, useState } from "react";
+import { deleteDoc, doc, updateDoc } from "firebase/firestore";
+import React, { useCallback, useRef, useState } from "react";
 import {
   Alert,
   Animated,
@@ -16,6 +17,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Purchases from "react-native-purchases"; // התוספת של RevenueCat
 import { RootStackParamList } from "../App";
 import { auth, db } from "../firebaseConfig";
 
@@ -33,49 +35,59 @@ interface Props {
 export default function HomeScreen({ navigation }: Props) {
   const [isMenuVisible, setMenuVisible] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
-  const [userName, setUserName] = useState("חבר"); // <-- סטייט לשם המשתמש
+  const [userName, setUserName] = useState("חבר");
 
-  // הגדרת משתנה האנימציה - התפריט מתחיל מחוץ למסך מצד ימין (ברוחב המסך)
   const slideAnim = useRef(new Animated.Value(width)).current;
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (auth.currentUser) {
-        // משיכת שם המשתמש מהאותנטיקציה (אם קיים) - אחרת נשאר "חבר"
-        if (auth.currentUser.displayName) {
-          setUserName(auth.currentUser.displayName);
-        }
+  useFocusEffect(
+    useCallback(() => {
+      const fetchUserData = async () => {
+        if (auth.currentUser) {
+          if (auth.currentUser.displayName) {
+            setUserName(auth.currentUser.displayName);
+          }
 
-        try {
-          const userRef = doc(db, "users", auth.currentUser.uid);
-          const userSnap = await getDoc(userRef);
-          setIsPremium(userSnap.data()?.isPremium || false);
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-        }
-      }
-    };
-    fetchUserData();
-  }, []);
+          try {
+            const userRef = doc(db, "users", auth.currentUser.uid);
 
+            const customerInfo = await Purchases.getCustomerInfo();
+            const hasPremium =
+              !!customerInfo.entitlements.active["כמותי לפסיכומטרי Pro"];
+
+            setIsPremium(hasPremium);
+
+            // סנכרון שקט לפיירבייס ליתר ביטחון
+            await updateDoc(userRef, {
+              isPremium: hasPremium,
+            });
+          } catch (error) {
+            console.error("Error fetching user data/premium status:", error);
+          }
+        }
+      };
+
+      fetchUserData();
+    }, []),
+  );
   const handleNavigation = async (screenName: keyof RootStackParamList) => {
     if (!auth.currentUser) return;
 
-    // --- זמנית לגרסה החינמית: נאפשר גישה לכל המסכים ללא הגבלה ---
-    navigation.navigate(screenName as any);
-    return;
-
-    /* --- קוד מקורי לפרימיום (שמור לעתיד כשתרצה להחזיר את מודל התשלום) ---
+    // מאפשרים גישה חופשית למסכי תרגול וסטטיסטיקה
     if (screenName === "Practice" || screenName === "Statistics") {
       navigation.navigate(screenName as any);
       return;
     }
 
+    // בדיקת פרימיום למסכים חסומים ישירות מול RevenueCat
     try {
-      const userRef = doc(db, "users", auth.currentUser.uid);
-      const userSnap = await getDoc(userRef);
-      const premiumStatus = userSnap.data()?.isPremium || false;
-
+      const customerInfo = await Purchases.getCustomerInfo();
+      const premiumStatus =
+        !!customerInfo.entitlements.active["כמותי לפסיכומטרי Pro"];
+      console.log(
+        "All active subscriptions:",
+        customerInfo.activeSubscriptions,
+      );
+      console.log("Active Entitlements:", customerInfo.entitlements.active);
       if (premiumStatus) {
         navigation.navigate(screenName as any);
       } else {
@@ -85,8 +97,10 @@ export default function HomeScreen({ navigation }: Props) {
           [
             { text: "אולי מאוחר יותר", style: "cancel" },
             {
-              text: "לפרטים על פרימיום",
-              onPress: () => console.log("Navigate to Paywall"),
+              text: "למעבר לרכישת מנוי",
+              onPress: () => {
+                navigation.navigate("Paywall" as any);
+              },
             },
           ],
         );
@@ -95,28 +109,25 @@ export default function HomeScreen({ navigation }: Props) {
       console.error("Error checking premium status:", error);
       Alert.alert("שגיאה", "לא הצלחנו לאמת את סטטוס המנוי שלך.");
     }
-    ------------------------------------------------------------------ */
   };
 
-  // פונקציה לפתיחת התפריט עם אנימציה
   const openMenu = () => {
     setMenuVisible(true);
     Animated.timing(slideAnim, {
-      toValue: 0, // מחליק למיקום המקורי שלו (צמוד לימין)
+      toValue: 0,
       duration: 300,
       useNativeDriver: true,
     }).start();
   };
 
-  // פונקציה לסגירת התפריט עם אנימציה
   const closeMenu = (callback?: () => void) => {
     Animated.timing(slideAnim, {
-      toValue: width, // מחליק חזרה מחוץ למסך
+      toValue: width,
       duration: 250,
       useNativeDriver: true,
     }).start(() => {
       setMenuVisible(false);
-      if (callback) callback(); // מפעיל פעולת המשך אם יש כזו (כמו ניווט)
+      if (callback) callback();
     });
   };
 
@@ -148,14 +159,10 @@ export default function HomeScreen({ navigation }: Props) {
                 const uid = auth.currentUser.uid;
                 const userRef = doc(db, "users", uid);
 
-                // שלב 1: מחיקת הנתונים מ-Firestore
                 await deleteDoc(userRef);
-
-                // שלב 2: מחיקת המשתמש מ-Firebase Auth
                 await deleteUser(auth.currentUser);
               } catch (error: any) {
                 console.error("Delete account error:", error);
-
                 if (error.code === "auth/requires-recent-login") {
                   Alert.alert(
                     "נדרש אימות מחדש",
@@ -178,11 +185,9 @@ export default function HomeScreen({ navigation }: Props) {
   const handleMenuPress = (action: string) => {
     closeMenu(() => {
       switch (action) {
-        /* זמנית בהערה - נחזיר בגרסת הפרימיום
         case "premium":
-          console.log("Navigate to Premium logic");
+          navigation.navigate("Paywall" as any);
           break;
-        */
         case "policy":
           Linking.openURL("https://novo967.github.io/Camuty-landing-page/");
           break;
@@ -298,7 +303,6 @@ export default function HomeScreen({ navigation }: Props) {
               <Text style={styles.menuHeaderText}>הגדרות</Text>
             </View>
 
-            {/* זמנית בהערה עד לשחרור גרסת הפרימיום
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => handleMenuPress("premium")}
@@ -308,7 +312,6 @@ export default function HomeScreen({ navigation }: Props) {
                 {isPremium ? "ניהול מנוי פרימיום" : "שדרוג לפרימיום"}
               </Text>
             </TouchableOpacity>
-            */}
 
             <TouchableOpacity
               style={styles.menuItem}

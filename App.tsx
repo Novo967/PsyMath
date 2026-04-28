@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import * as Application from "expo-application"; // <-- ייבוא חדש לזיהוי גרסה
+import * as Application from "expo-application";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore"; // <-- ייבוא לשליפת הגדרות מפיירבייס
+import { doc, getDoc } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -16,6 +16,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+// --- RevenueCat Import ---
+import Purchases from "react-native-purchases";
+
 import { auth, db } from "./firebaseConfig";
 
 // Video & Splash imports
@@ -25,6 +28,7 @@ import * as SplashScreen from "expo-splash-screen";
 // Import Screens
 import HomeScreen from "./screens/HomeScreen";
 import LoginScreen from "./screens/LoginScreen";
+import PaywallScreen from "./screens/PaywallScreen"; // הייבוא החדש
 import PracticeScreen from "./screens/PracticeScreen";
 import SignUpScreen from "./screens/SignUpScreen";
 import SimulationResultsScreen from "./screens/SimulationResultsScreen";
@@ -44,6 +48,7 @@ export type RootStackParamList = {
   SignUp: undefined;
   Login: undefined;
   SimulationResultsScreen: undefined;
+  Paywall: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -72,8 +77,22 @@ export default function App() {
   const [isUpdateRequired, setIsUpdateRequired] = useState(false);
   const [storeUrls, setStoreUrls] = useState({ ios: "", android: "" });
 
-  // בדיקת גרסת אפליקציה מול פיירבייס
+  // אתחול RevenueCat ובדיקת גרסת אפליקציה מול פיירבייס
   useEffect(() => {
+    // 1. אתחול RevenueCat מיד כשהאפליקציה עולה
+    const initRevenueCat = async () => {
+      try {
+        if (Platform.OS === "android") {
+          Purchases.configure({ apiKey: "goog_pgdcjCSnrMDfVqjdSVmzFEbwMRq" });
+        } else if (Platform.OS === "ios") {
+          Purchases.configure({ apiKey: "appl_HZOpQCaEjCsxuzwpXpOJwxzDHMO" });
+        }
+      } catch (error) {
+        console.error("Error initializing RevenueCat:", error);
+      }
+    };
+
+    // 2. בדיקת גרסת אפליקציה מול פיירבייס
     const checkAppVersion = async () => {
       try {
         const docRef = doc(db, "appConfig", "versionControl");
@@ -100,12 +119,13 @@ export default function App() {
       }
     };
 
+    initRevenueCat();
     checkAppVersion();
   }, []);
 
   // האזנה לסטטוס התחברות
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         const isEmailProvider = currentUser.providerData.some(
           (provider) => provider.providerId === "password",
@@ -115,17 +135,43 @@ export default function App() {
           setUser(null);
         } else {
           setUser(currentUser);
+
+          try {
+            await Purchases.logIn(currentUser.uid);
+          } catch (error) {
+            console.error("Error logging in to RevenueCat:", error);
+          }
         }
       } else {
         setUser(null);
+
+        try {
+          await Purchases.logOut();
+        } catch (error) {
+          console.error("Error logging out of RevenueCat:", error);
+        }
       }
       setIsLoading(false);
     });
 
     return unsubscribe;
   }, []);
+  // מאזין לשינויים בסטטוס המנוי ברקע (למשל מיד אחרי רכישה מוצלחת)
+  // מאזין לשינויים בסטטוס המנוי ברקע
+  useEffect(() => {
+    // 1. מגדירים את פונקציית המאזין
+    const customerInfoUpdateListener = (info: any) => {
+      console.log("Customer Info updated in background:", info);
+    };
 
-  // ניהול מצב הנגן של הוידאו
+    // 2. רושמים את המאזין
+    Purchases.addCustomerInfoUpdateListener(customerInfoUpdateListener);
+
+    // 3. מסירים אותו בסגירה בעזרת הפקודה הייעודית
+    return () => {
+      Purchases.removeCustomerInfoUpdateListener(customerInfoUpdateListener);
+    };
+  }, []);
   const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
     if (status.isLoaded) {
       SplashScreen.hideAsync();
@@ -136,7 +182,6 @@ export default function App() {
     }
   };
 
-  // 1. תצוגת הספלאש וידאו (מוצג כל עוד הוידאו לא הסתיים)
   if (!isVideoFinished) {
     return (
       <View style={styles.splashContainer}>
@@ -152,7 +197,6 @@ export default function App() {
     );
   }
 
-  // 2. תצוגת חסימת מסך - מוצגת אם נדרש עדכון גרסה!
   if (isUpdateRequired) {
     return (
       <View style={styles.updateContainer}>
@@ -185,7 +229,6 @@ export default function App() {
     );
   }
 
-  // 3. תצוגת טעינה של Firebase
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -194,7 +237,6 @@ export default function App() {
     );
   }
 
-  // 4. תצוגת האפליקציה הרגילה
   return (
     <NavigationContainer>
       <Stack.Navigator
@@ -254,6 +296,15 @@ export default function App() {
               component={SimulationResultsScreen}
               options={{ title: "תוצאות המבחן" }}
             />
+            {/* מסך ה-Paywall החדש שלנו מוגדר כאן: */}
+            <Stack.Screen
+              name="Paywall"
+              component={PaywallScreen}
+              options={{
+                presentation: "modal", // גורם למסך להחליק מלמטה (כמו פופ-אפ)
+                headerShown: false, // מסתיר את שורת הכותרת כדי שה-Paywall יתפוס את כל המסך
+              }}
+            />
           </>
         ) : (
           <>
@@ -281,7 +332,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  // עיצוב למסך העדכון החוסם
   updateContainer: {
     flex: 1,
     justifyContent: "center",

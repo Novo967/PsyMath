@@ -1,3 +1,5 @@
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
   arrayUnion,
   collection,
@@ -17,6 +19,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Purchases from "react-native-purchases"; // התוספת של RevenueCat
+import { RootStackParamList } from "../App";
 import { auth, db } from "../firebaseConfig";
 
 // Define the Question interface based on our JSON structure
@@ -41,6 +45,9 @@ const shuffleArray = <T,>(array: T[]): T[] => {
 };
 
 export default function PracticeScreen() {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
   const [userStatus, setUserStatus] = useState<{
     isPremium: boolean;
     solvedToday: number;
@@ -76,6 +83,10 @@ export default function PracticeScreen() {
       const userRef = doc(db, "users", auth.currentUser.uid);
       const userSnap = await getDoc(userRef);
 
+      // שולפים את מנוי הפרימיום האמיתי מ-RevenueCat
+      const customerInfo = await Purchases.getCustomerInfo();
+      const isUserPremium = !!customerInfo.entitlements.active["premium"];
+
       if (userSnap.exists()) {
         const data = userSnap.data();
         const lastDate = data.lastQuestionDate
@@ -85,16 +96,20 @@ export default function PracticeScreen() {
 
         let solvedToday = data.questionsSolvedToday || 0;
 
+        // סנכרון נתונים מקדים - גם אם לא עבר יום, נסנכרן את הפרימיום לפיירבייס
+        const updateObj: any = { isPremium: isUserPremium };
+
         // If a day has passed - reset the counter in Firestore
         if (lastDate !== today) {
-          await updateDoc(userRef, {
-            questionsSolvedToday: 0,
-            lastQuestionDate: new Date().toISOString(),
-          });
+          updateObj.questionsSolvedToday = 0;
+          updateObj.lastQuestionDate = new Date().toISOString();
           solvedToday = 0;
         }
 
-        setUserStatus({ isPremium: data.isPremium, solvedToday });
+        // שולח את העדכונים לפיירבייס (איפוס מכסה יומית אם צריך + עדכון סטטוס מנוי)
+        await updateDoc(userRef, updateObj);
+
+        setUserStatus({ isPremium: isUserPremium, solvedToday });
       }
     } catch (error) {
       console.error("Error checking limit:", error);
@@ -127,16 +142,22 @@ export default function PracticeScreen() {
 
     // בודק אם זו הפעם הראשונה שהמשתמש לוחץ על "בדוק" בשאלה הנוכחית
     if (!hasCountedInQuota) {
-      /* --- זמנית בהערה לגרסה החינמית - חסימת משתמשים שסיימו מכסה ---
+      // חסימת משתמשים שאינם פרימיום ושסיימו את המכסה היומית שלהם
       if (!userStatus.isPremium && userStatus.solvedToday >= 10) {
         Alert.alert(
           "המכסה היומית הסתיימה",
           "פתרת 10 שאלות היום. משתמשי פרימיום נהנים מתרגול ללא הגבלה!",
-          [{ text: "הבנתי" }]
+          [
+            { text: "הבנתי", style: "cancel" },
+            {
+              text: "שדרג לפרימיום",
+              // הניווט הפעיל למסך התשלום
+              onPress: () => navigation.navigate("Paywall" as any),
+            },
+          ],
         );
         return;
       }
-      ------------------------------------------------------------- */
 
       // עדכון הסטטיסטיקות והמכסות בפיירבייס
       try {
@@ -369,7 +390,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
     paddingTop: 40,
-    paddingBottom: 40, // הוקטן כי הכפתור כבר לא נמצא בתוך הגלילה
+    paddingBottom: 40,
   },
   topicBadge: {
     alignSelf: "flex-end",
@@ -455,7 +476,7 @@ const styles = StyleSheet.create({
   },
   fixedBottomContainer: {
     paddingHorizontal: 20,
-    paddingBottom: 50, // מרווח נשימה בתחתית המסך
+    paddingBottom: 50,
     paddingTop: 10,
     backgroundColor: "#9dbde9",
   },
