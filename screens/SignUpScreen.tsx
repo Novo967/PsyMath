@@ -1,11 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { useNavigation } from "@react-navigation/native";
-import * as AppleAuthentication from "expo-apple-authentication"; // <-- הוספנו את ספריית אפל
+import * as AppleAuthentication from "expo-apple-authentication";
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
-  OAuthProvider, // <-- הוספנו עבור אפל
+  OAuthProvider,
   sendEmailVerification,
   signInWithCredential,
   signOut,
@@ -38,7 +38,7 @@ export default function SignUpScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [isAppleLoading, setIsAppleLoading] = useState(false); // <-- סטייט לטעינה של אפל
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -56,6 +56,10 @@ export default function SignUpScreen() {
     const docSnap = await getDoc(userRef);
 
     if (!docSnap.exists()) {
+      // חישוב תאריך סיום תקופת הניסיון (3 ימים קדימה)
+      const trialEndDate = new Date();
+      trialEndDate.setDate(trialEndDate.getDate() + 3);
+
       await setDoc(userRef, {
         email: user.email,
         name: user.displayName || fallbackName || "",
@@ -64,6 +68,7 @@ export default function SignUpScreen() {
         dailyLimit: 10,
         lastQuestionDate: new Date().toISOString(),
         createdAt: new Date().toISOString(),
+        trialEndsAt: trialEndDate.toISOString(), // הוספת שדה תקופת הניסיון
       });
     }
   };
@@ -149,7 +154,6 @@ export default function SignUpScreen() {
     }
   };
 
-  // --- לוגיקת ההתחברות של אפל ---
   const handleAppleSignIn = async () => {
     setIsAppleLoading(true);
     try {
@@ -171,7 +175,6 @@ export default function SignUpScreen() {
 
       const userCredential = await signInWithCredential(auth, authCredential);
 
-      // חילוץ שם המשתמש (אפל שולחת את זה רק בהתחברות הראשונה אי פעם!)
       let fallbackName = "";
       if (credential.fullName) {
         const givenName = credential.fullName.givenName || "";
@@ -210,7 +213,6 @@ export default function SignUpScreen() {
             </View>
 
             <View style={styles.form}>
-              {/* --- כפתור התחברות עם אפל (יוצג רק ב-iOS) --- */}
               {Platform.OS === "ios" && (
                 <View style={styles.appleButtonWrapper}>
                   {isAppleLoading ? (
@@ -257,7 +259,6 @@ export default function SignUpScreen() {
                 <View style={styles.divider} />
               </View>
 
-              {/* --- שדה השם הפרטי --- */}
               <View style={styles.inputContainer}>
                 <Ionicons
                   name="person-outline"

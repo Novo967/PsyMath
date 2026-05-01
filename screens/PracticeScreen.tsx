@@ -19,11 +19,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import Purchases from "react-native-purchases"; // התוספת של RevenueCat
+import Purchases from "react-native-purchases";
 import { RootStackParamList } from "../App";
 import { auth, db } from "../firebaseConfig";
 
-// Define the Question interface based on our JSON structure
 interface Question {
   id: string;
   topic: string;
@@ -34,7 +33,6 @@ interface Question {
   difficulty: string;
 }
 
-// Helper function to shuffle an array (Fisher-Yates algorithm)
 const shuffleArray = <T,>(array: T[]): T[] => {
   const newArray = [...array];
   for (let i = newArray.length - 1; i > 0; i--) {
@@ -48,13 +46,14 @@ export default function PracticeScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
+  // הרחבת הסטייט כדי שישמור גם האם תקופת הניסיון פעילה
   const [userStatus, setUserStatus] = useState<{
     isPremium: boolean;
     solvedToday: number;
+    isTrialActive: boolean;
   } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // State for the questions fetched from Firestore
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -62,11 +61,9 @@ export default function PracticeScreen() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [showSolution, setShowSolution] = useState(false);
 
-  // State to track if the current question has already been counted towards the daily quota and stats
   const [hasCountedInQuota, setHasCountedInQuota] = useState(false);
 
   useEffect(() => {
-    // Load both user limits and questions on mount
     const loadData = async () => {
       await checkUserLimit();
       await fetchQuestions();
@@ -83,7 +80,6 @@ export default function PracticeScreen() {
       const userRef = doc(db, "users", auth.currentUser.uid);
       const userSnap = await getDoc(userRef);
 
-      // שולפים את מנוי הפרימיום האמיתי מ-RevenueCat
       const customerInfo = await Purchases.getCustomerInfo();
       const isUserPremium = !!customerInfo.entitlements.active["premium"];
 
@@ -96,20 +92,24 @@ export default function PracticeScreen() {
 
         let solvedToday = data.questionsSolvedToday || 0;
 
-        // סנכרון נתונים מקדים - גם אם לא עבר יום, נסנכרן את הפרימיום לפיירבייס
+        // בדיקת תוקף הניסיון בפיירבייס
+        const trialEndsAt = data.trialEndsAt;
+        const isTrialActive = trialEndsAt
+          ? new Date(trialEndsAt) > new Date()
+          : false;
+
         const updateObj: any = { isPremium: isUserPremium };
 
-        // If a day has passed - reset the counter in Firestore
         if (lastDate !== today) {
           updateObj.questionsSolvedToday = 0;
           updateObj.lastQuestionDate = new Date().toISOString();
           solvedToday = 0;
         }
 
-        // שולח את העדכונים לפיירבייס (איפוס מכסה יומית אם צריך + עדכון סטטוס מנוי)
         await updateDoc(userRef, updateObj);
 
-        setUserStatus({ isPremium: isUserPremium, solvedToday });
+        // עדכון הסטייט כולל משתנה הניסיון
+        setUserStatus({ isPremium: isUserPremium, solvedToday, isTrialActive });
       }
     } catch (error) {
       console.error("Error checking limit:", error);
@@ -124,7 +124,6 @@ export default function PracticeScreen() {
         ...doc.data(),
       })) as Question[];
 
-      // Shuffle the questions before setting them to state
       setQuestions(shuffleArray(questionsList));
     } catch (error) {
       console.error("Error fetching questions:", error);
@@ -140,10 +139,11 @@ export default function PracticeScreen() {
     const currentQuestion = questions[currentIndex];
     const isCorrect = selectedAnswer === currentQuestion.correctAnswerIndex;
 
-    // בודק אם זו הפעם הראשונה שהמשתמש לוחץ על "בדוק" בשאלה הנוכחית
     if (!hasCountedInQuota) {
-      // חסימת משתמשים שאינם פרימיום ושסיימו את המכסה היומית שלהם
-      if (!userStatus.isPremium && userStatus.solvedToday >= 10) {
+      // למשתמש יש גישה חופשית אם הוא פרימיום *או* אם הוא בתקופת הניסיון שלו
+      const hasFullAccess = userStatus.isPremium || userStatus.isTrialActive;
+
+      if (!hasFullAccess && userStatus.solvedToday >= 10) {
         Alert.alert(
           "המכסה היומית הסתיימה",
           "פתרת 10 שאלות היום. משתמשי פרימיום נהנים מתרגול ללא הגבלה!",
@@ -151,7 +151,6 @@ export default function PracticeScreen() {
             { text: "הבנתי", style: "cancel" },
             {
               text: "שדרג לפרימיום",
-              // הניווט הפעיל למסך התשלום
               onPress: () => navigation.navigate("Paywall" as any),
             },
           ],
@@ -159,11 +158,9 @@ export default function PracticeScreen() {
         return;
       }
 
-      // עדכון הסטטיסטיקות והמכסות בפיירבייס
       try {
         const userRef = doc(db, "users", auth.currentUser.uid);
 
-        // אובייקט העדכון הבסיסי
         const updateData: any = {
           questionsSolvedToday: increment(1),
           totalQuestionsPracticed: increment(1),
@@ -171,14 +168,12 @@ export default function PracticeScreen() {
           lastQuestionDate: new Date().toISOString(),
         };
 
-        // אם הוא צדק בניסיון הראשון, נוסיף לעדכון גם את מונה התשובות הנכונות
         if (isCorrect) {
           updateData.totalCorrectAnswers = increment(1);
         }
 
         await updateDoc(userRef, updateData);
 
-        // עדכון סטייט מקומי
         setUserStatus((prev) =>
           prev ? { ...prev, solvedToday: prev.solvedToday + 1 } : null,
         );
@@ -188,7 +183,6 @@ export default function PracticeScreen() {
       }
     }
 
-    // הצגת המשוב למשתמש
     setShowFeedback(true);
   };
 
@@ -231,7 +225,6 @@ export default function PracticeScreen() {
   const isCorrectAnswer =
     showFeedback && selectedAnswer === currentQuestion.correctAnswerIndex;
 
-  // פונקציות עיצוב דינמיות ששומרות על לוגיקת הניסיון החוזר
   const getOptionStyle = (index: number) => {
     if (!showFeedback) {
       return selectedAnswer === index
@@ -239,7 +232,6 @@ export default function PracticeScreen() {
         : styles.optionButton;
     }
 
-    // אם נבדק והתשובה שבחרנו נכונה
     if (
       selectedAnswer === index &&
       selectedAnswer === currentQuestion.correctAnswerIndex
@@ -247,7 +239,6 @@ export default function PracticeScreen() {
       return [styles.optionButton, styles.correctOption];
     }
 
-    // אם נבדק והתשובה שבחרנו שגויה (צובע רק אותה, לא מסגיר את הנכונה)
     if (
       selectedAnswer === index &&
       selectedAnswer !== currentQuestion.correctAnswerIndex
@@ -255,7 +246,6 @@ export default function PracticeScreen() {
       return [styles.optionButton, styles.wrongOption];
     }
 
-    // שאר התשובות נשארות רגילות כדי לאפשר לחיצה חוזרת
     return styles.optionButton;
   };
 
@@ -284,19 +274,16 @@ export default function PracticeScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* תגית נושא */}
         <View style={styles.topicBadge}>
           <Text style={styles.topicText}>{currentQuestion.topic}</Text>
         </View>
 
-        {/* כרטיסיית השאלה */}
         <View style={styles.questionCard}>
           <Text style={styles.questionText}>
             {currentQuestion.questionText}
           </Text>
         </View>
 
-        {/* אזור התשובות */}
         <View style={styles.optionsContainer}>
           {currentQuestion.options.map((opt, index) => (
             <TouchableOpacity
@@ -304,11 +291,10 @@ export default function PracticeScreen() {
               style={getOptionStyle(index)}
               onPress={() => {
                 setSelectedAnswer(index);
-                // מאפס את המשוב והפתרון ברגע שבוחרים תשובה חדשה לניסיון נוסף
                 setShowFeedback(false);
                 setShowSolution(false);
               }}
-              disabled={isCorrectAnswer} // נועל רק אם הוא כבר מצא את התשובה הנכונה
+              disabled={isCorrectAnswer}
               activeOpacity={0.7}
             >
               <Text style={getOptionTextStyle(index)}>{opt}</Text>
@@ -316,7 +302,6 @@ export default function PracticeScreen() {
           ))}
         </View>
 
-        {/* משוב ופתרון (נשארים בגלילה) */}
         {showFeedback && (
           <View style={styles.feedbackContainer}>
             <Text
@@ -351,7 +336,6 @@ export default function PracticeScreen() {
         )}
       </ScrollView>
 
-      {/* אזור כפתור קבוע בתחתית המסך */}
       <View style={styles.fixedBottomContainer}>
         {!showFeedback ? (
           <TouchableOpacity

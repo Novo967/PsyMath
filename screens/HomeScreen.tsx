@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { deleteUser, signOut } from "firebase/auth";
-import { deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { deleteDoc, doc, getDoc, updateDoc } from "firebase/firestore";
 import React, { useCallback, useRef, useState } from "react";
 import {
   Alert,
@@ -17,7 +17,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import Purchases from "react-native-purchases"; // התוספת של RevenueCat
+import Purchases from "react-native-purchases";
 import { RootStackParamList } from "../App";
 import { auth, db } from "../firebaseConfig";
 
@@ -35,7 +35,7 @@ interface Props {
 export default function HomeScreen({ navigation }: Props) {
   const [isMenuVisible, setMenuVisible] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
-  const [userName, setUserName] = useState("חבר");
+  const [userName, setUserName] = useState(""); // שינינו למחרוזת ריקה כדי לטפל במצב שאין שם
 
   const slideAnim = useRef(new Animated.Value(width)).current;
 
@@ -43,12 +43,17 @@ export default function HomeScreen({ navigation }: Props) {
     useCallback(() => {
       const fetchUserData = async () => {
         if (auth.currentUser) {
-          if (auth.currentUser.displayName) {
-            setUserName(auth.currentUser.displayName);
-          }
-
           try {
             const userRef = doc(db, "users", auth.currentUser.uid);
+
+            // משיכת נתוני המשתמש מה-Firestore (מקור האמת שלנו)
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists() && userSnap.data().name) {
+              setUserName(userSnap.data().name);
+            } else if (auth.currentUser.displayName) {
+              // גיבוי למקרה שהשם שמור רק ב-Auth מסיבה כלשהי
+              setUserName(auth.currentUser.displayName);
+            }
 
             const customerInfo = await Purchases.getCustomerInfo();
             const hasPremium =
@@ -56,7 +61,6 @@ export default function HomeScreen({ navigation }: Props) {
 
             setIsPremium(hasPremium);
 
-            // סנכרון שקט לפיירבייס ליתר ביטחון
             await updateDoc(userRef, {
               isPremium: hasPremium,
             });
@@ -69,26 +73,40 @@ export default function HomeScreen({ navigation }: Props) {
       fetchUserData();
     }, []),
   );
+
   const handleNavigation = async (screenName: keyof RootStackParamList) => {
     if (!auth.currentUser) return;
 
-    // מאפשרים גישה חופשית למסכי תרגול וסטטיסטיקה
     if (screenName === "Practice" || screenName === "Statistics") {
       navigation.navigate(screenName as any);
       return;
     }
 
-    // בדיקת פרימיום למסכים חסומים ישירות מול RevenueCat
     try {
+      // 1. קודם בודקים מול RevenueCat האם המשתמש כבר רכש
       const customerInfo = await Purchases.getCustomerInfo();
       const premiumStatus =
         !!customerInfo.entitlements.active["כמותי לפסיכומטרי Pro"];
-      console.log(
-        "All active subscriptions:",
-        customerInfo.activeSubscriptions,
-      );
-      console.log("Active Entitlements:", customerInfo.entitlements.active);
+
       if (premiumStatus) {
+        navigation.navigate(screenName as any);
+        return;
+      }
+
+      // 2. במידה ואין מנוי, בודקים את תוקף הניסיון בפיירבייס
+      const userRef = doc(db, "users", auth.currentUser.uid);
+      const userSnap = await getDoc(userRef);
+      let isTrialActive = false;
+
+      if (userSnap.exists()) {
+        const trialEndsAt = userSnap.data().trialEndsAt;
+        if (trialEndsAt && new Date(trialEndsAt) > new Date()) {
+          isTrialActive = true;
+        }
+      }
+
+      if (isTrialActive) {
+        // אם תקופת הניסיון עדיין בתוקף, נותנים להיכנס למסך
         navigation.navigate(screenName as any);
       } else {
         Alert.alert(
@@ -106,7 +124,7 @@ export default function HomeScreen({ navigation }: Props) {
         );
       }
     } catch (error) {
-      console.error("Error checking premium status:", error);
+      console.error("Error checking premium/trial status:", error);
       Alert.alert("שגיאה", "לא הצלחנו לאמת את סטטוס המנוי שלך.");
     }
   };
@@ -216,7 +234,12 @@ export default function HomeScreen({ navigation }: Props) {
 
         <View style={styles.headerContainer}>
           <Text style={styles.title}>הכנה כמותית לפסיכומטרי</Text>
-          <Text style={styles.subtitle}>שלום {userName}, מה נלמד היום?</Text>
+          {/* הוספנו את התנאי שבודק אם יש שם ומתאים את הברכה */}
+          <Text style={styles.subtitle}>
+            {userName
+              ? `שלום ${userName}, מה נלמד היום?`
+              : "שלום מה נלמד היום?"}
+          </Text>
         </View>
 
         <View style={styles.cardsContainer}>
