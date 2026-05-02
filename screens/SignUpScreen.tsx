@@ -1,7 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import * as AppleAuthentication from "expo-apple-authentication";
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  OAuthProvider,
   sendEmailVerification,
   signOut,
   updateProfile,
@@ -32,14 +35,29 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId:
+        "493324822355-7hd2is082s1oqv8mjkuk6t1krbsvsv0a.apps.googleusercontent.com",
+      iosClientId:
+        "493324822355-sev2gl1gbn216thd3sa71k4s63lasv28.apps.googleusercontent.com",
+    });
+  }, []);
 
   const createUserDocument = async (user: any, fallbackName?: string) => {
     const userRef = doc(db, "users", user.uid);
     const docSnap = await getDoc(userRef);
 
     if (!docSnap.exists()) {
+      // חישוב תאריך סיום תקופת הניסיון (3 ימים קדימה)
+      const trialEndDate = new Date();
+      trialEndDate.setDate(trialEndDate.getDate() + 3);
+
       await setDoc(userRef, {
         email: user.email,
         name: user.displayName || fallbackName || "",
@@ -48,6 +66,7 @@ export default function SignUpScreen() {
         dailyLimit: 10,
         lastQuestionDate: new Date().toISOString(),
         createdAt: new Date().toISOString(),
+        trialEndsAt: trialEndDate.toISOString(), // הוספת שדה תקופת הניסיון
       });
     }
   };
@@ -67,7 +86,6 @@ export default function SignUpScreen() {
     let userCreated = false;
 
     try {
-      // 1. יצירת המשתמש
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -75,12 +93,10 @@ export default function SignUpScreen() {
       );
       userCreated = true;
 
-      // 2. עדכון הפרופיל בפיירבייס Auth עם השם
       await updateProfile(userCredential.user, {
         displayName: name,
       });
 
-      // 3. שליחת אימות ושמירת המסמך ב-Firestore
       await sendEmailVerification(userCredential.user);
       await createUserDocument(userCredential.user, name);
 
@@ -115,6 +131,68 @@ export default function SignUpScreen() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      const idToken = userInfo.data?.idToken;
+
+      if (!idToken) throw new Error("No ID token found");
+
+      const googleCredential = GoogleAuthProvider.credential(idToken);
+      const userCredential = await signInWithCredential(auth, googleCredential);
+
+      await createUserDocument(userCredential.user);
+    } catch (error: any) {
+      console.error("Google Sign-In Error:", error);
+      Alert.alert("שגיאה", "לא הצלחנו להתחבר דרך גוגל.");
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    setIsAppleLoading(true);
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      if (!credential.identityToken) {
+        throw new Error("No identity token provided by Apple");
+      }
+
+      const provider = new OAuthProvider("apple.com");
+      const authCredential = provider.credential({
+        idToken: credential.identityToken,
+      });
+
+      const userCredential = await signInWithCredential(auth, authCredential);
+
+      let fallbackName = "";
+      if (credential.fullName) {
+        const givenName = credential.fullName.givenName || "";
+        const familyName = credential.fullName.familyName || "";
+        fallbackName = `${givenName} ${familyName}`.trim();
+      }
+
+      await createUserDocument(userCredential.user, fallbackName);
+    } catch (error: any) {
+      if (error.code === "ERR_REQUEST_CANCELED") {
+        console.log("Apple sign-in was canceled by the user");
+      } else {
+        console.error("Apple Sign-In Error:", error);
+        Alert.alert("שגיאה", "לא הצלחנו להתחבר דרך אפל.");
+      }
+    } finally {
+      setIsAppleLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
@@ -133,6 +211,52 @@ export default function SignUpScreen() {
             </View>
 
             <View style={styles.form}>
+              {Platform.OS === "ios" && (
+                <View style={styles.appleButtonWrapper}>
+                  {isAppleLoading ? (
+                    <View
+                      style={[styles.googleButton, { borderColor: "#000" }]}
+                    >
+                      <ActivityIndicator color="#000" />
+                    </View>
+                  ) : (
+                    <AppleAuthentication.AppleAuthenticationButton
+                      buttonType={
+                        AppleAuthentication.AppleAuthenticationButtonType
+                          .SIGN_IN
+                      }
+                      buttonStyle={
+                        AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+                      }
+                      cornerRadius={12}
+                      style={styles.appleButton}
+                      onPress={handleAppleSignIn}
+                    />
+                  )}
+                </View>
+              )}
+
+              <TouchableOpacity
+                style={styles.googleButton}
+                onPress={handleGoogleSignIn}
+                disabled={isGoogleLoading || isAppleLoading}
+              >
+                {isGoogleLoading ? (
+                  <ActivityIndicator color="#333" />
+                ) : (
+                  <>
+                    <Ionicons name="logo-google" size={20} color="#4181ef" />
+                    <Text style={styles.googleButtonText}>המשך עם Google</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <View style={styles.dividerContainer}>
+                <View style={styles.divider} />
+                <Text style={styles.dividerText}>או</Text>
+                <View style={styles.divider} />
+              </View>
+
               <View style={styles.inputContainer}>
                 <Ionicons
                   name="person-outline"
@@ -264,6 +388,38 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: "800", color: "#2D3748", marginBottom: 8 },
   subtitle: { fontSize: 16, color: "#718096" },
   form: { gap: 16 },
+  appleButtonWrapper: {
+    width: "100%",
+    height: 56,
+  },
+  appleButton: {
+    width: "100%",
+    height: "100%",
+  },
+  googleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFF",
+    height: 56,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    gap: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  googleButtonText: { fontSize: 16, fontWeight: "600", color: "#2D3748" },
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 10,
+  },
+  divider: { flex: 1, height: 1, backgroundColor: "#E2E8F0" },
+  dividerText: { marginHorizontal: 15, color: "#A0AEC0", fontSize: 14 },
   inputContainer: {
     flexDirection: "row-reverse",
     alignItems: "center",
