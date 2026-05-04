@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // <-- הוספנו
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { useNavigation } from "@react-navigation/native";
 import * as AppleAuthentication from "expo-apple-authentication";
@@ -56,9 +57,15 @@ export default function SignUpScreen() {
     const docSnap = await getDoc(userRef);
 
     if (!docSnap.exists()) {
-      // חישוב תאריך סיום תקופת הניסיון (3 ימים קדימה)
       const trialEndDate = new Date();
       trialEndDate.setDate(trialEndDate.getDate() + 3);
+
+      // --- הוספת המכשיר הנוכחי ברגע ההרשמה ---
+      let localDeviceId = await AsyncStorage.getItem("deviceId");
+      if (!localDeviceId) {
+        localDeviceId = `dev_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        await AsyncStorage.setItem("deviceId", localDeviceId);
+      }
 
       await setDoc(userRef, {
         email: user.email,
@@ -68,7 +75,8 @@ export default function SignUpScreen() {
         dailyLimit: 10,
         lastQuestionDate: new Date().toISOString(),
         createdAt: new Date().toISOString(),
-        trialEndsAt: trialEndDate.toISOString(), // הוספת שדה תקופת הניסיון
+        trialEndsAt: trialEndDate.toISOString(),
+        devices: [localDeviceId], // שומר את המכשיר הראשון במערך
       });
     }
   };
@@ -95,10 +103,7 @@ export default function SignUpScreen() {
       );
       userCreated = true;
 
-      await updateProfile(userCredential.user, {
-        displayName: name,
-      });
-
+      await updateProfile(userCredential.user, { displayName: name });
       await sendEmailVerification(userCredential.user);
       await createUserDocument(userCredential.user, name);
 
@@ -164,9 +169,8 @@ export default function SignUpScreen() {
         ],
       });
 
-      if (!credential.identityToken) {
+      if (!credential.identityToken)
         throw new Error("No identity token provided by Apple");
-      }
 
       const provider = new OAuthProvider("apple.com");
       const authCredential = provider.credential({
@@ -184,9 +188,7 @@ export default function SignUpScreen() {
 
       await createUserDocument(userCredential.user, fallbackName);
     } catch (error: any) {
-      if (error.code === "ERR_REQUEST_CANCELED") {
-        console.log("Apple sign-in was canceled by the user");
-      } else {
+      if (error.code !== "ERR_REQUEST_CANCELED") {
         console.error("Apple Sign-In Error:", error);
         Alert.alert("שגיאה", "לא הצלחנו להתחבר דרך אפל.");
       }
@@ -390,14 +392,8 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: "800", color: "#2D3748", marginBottom: 8 },
   subtitle: { fontSize: 16, color: "#718096" },
   form: { gap: 16 },
-  appleButtonWrapper: {
-    width: "100%",
-    height: 56,
-  },
-  appleButton: {
-    width: "100%",
-    height: "100%",
-  },
+  appleButtonWrapper: { width: "100%", height: 56 },
+  appleButton: { width: "100%", height: "100%" },
   googleButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -449,13 +445,6 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   submitButtonText: { color: "#FFF", fontSize: 18, fontWeight: "700" },
-  loginLinkContainer: {
-    marginTop: 15,
-    alignItems: "center",
-  },
-  loginLinkText: {
-    color: "#4A90E2",
-    fontSize: 16,
-    fontWeight: "600",
-  },
+  loginLinkContainer: { marginTop: 15, alignItems: "center" },
+  loginLinkText: { color: "#4A90E2", fontSize: 16, fontWeight: "600" },
 });

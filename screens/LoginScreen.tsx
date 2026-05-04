@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // <-- הוספנו
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { useNavigation } from "@react-navigation/native";
 import {
@@ -45,6 +46,13 @@ export default function LoginScreen() {
     const userRef = doc(db, "users", user.uid);
     const docSnap = await getDoc(userRef);
     if (!docSnap.exists()) {
+      // --- הוספת המכשיר הנוכחי ---
+      let localDeviceId = await AsyncStorage.getItem("deviceId");
+      if (!localDeviceId) {
+        localDeviceId = `dev_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        await AsyncStorage.setItem("deviceId", localDeviceId);
+      }
+
       await setDoc(userRef, {
         email: user.email,
         name: user.displayName || "",
@@ -53,6 +61,7 @@ export default function LoginScreen() {
         dailyLimit: 10,
         lastQuestionDate: new Date().toISOString(),
         createdAt: new Date().toISOString(),
+        devices: [localDeviceId], // שומר את המכשיר הראשון במערך
       });
     }
   };

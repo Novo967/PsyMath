@@ -177,9 +177,9 @@ export default function PaywallScreen({ navigation }: Props) {
 
                   {/* הערת תקופת ניסיון - כרגע בטקסט קבוע */}
                   <View style={styles.trialContainer}>
-                    <Text style={styles.trialText}>לא צריך לזכור לבטל!</Text>
+                    <Text style={styles.trialText}>המינוי מתחדש אוטומטית.</Text>
                     <Text style={styles.trialSubText}>
-                      המנוי מסתיים בתום התקופה ואינו מתחדש אוטומטית.
+                      ניתן לבטל בכל עת דרך הגדרות המכשיר.
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     alignItems: "center",
     marginTop: 10,
-    marginBottom: 30,
+    marginBottom: 10,
   },
   headerIcon: {
     marginBottom: 10,
@@ -246,8 +246,8 @@ const styles = StyleSheet.create({
   featuresContainer: {
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
-    padding: 20,
-    marginBottom: 30,
+    padding: 10,
+    marginBottom: 10,
     shadowColor: "#162C5B",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
@@ -269,13 +269,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   packagesContainer: {
-    gap: 15,
-    marginBottom: 30,
+    gap: 10,
+    marginBottom: 10,
   },
   packageCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
-    padding: 20,
+    padding: 10,
     borderWidth: 2,
     borderColor: "transparent",
     shadowColor: "#162C5B",

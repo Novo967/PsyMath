@@ -1,9 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // <-- הוספנו את האחסון המקומי
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import * as Application from "expo-application";
-import { onAuthStateChanged, User } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { AVPlaybackStatus, ResizeMode, Video } from "expo-av";
+import * as SplashScreen from "expo-splash-screen";
+import { User, onAuthStateChanged, signOut } from "firebase/auth";
+import { doc, getDoc, updateDoc } from "firebase/firestore"; // <-- הוספנו את updateDoc
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -16,19 +19,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-// --- RevenueCat Import ---
 import Purchases from "react-native-purchases";
 
 import { auth, db } from "./firebaseConfig";
 
-// Video & Splash imports
-import { AVPlaybackStatus, ResizeMode, Video } from "expo-av";
-import * as SplashScreen from "expo-splash-screen";
-
 // Import Screens
 import HomeScreen from "./screens/HomeScreen";
 import LoginScreen from "./screens/LoginScreen";
-import PaywallScreen from "./screens/PaywallScreen"; // הייבוא החדש
+import PaywallScreen from "./screens/PaywallScreen";
 import PracticeScreen from "./screens/PracticeScreen";
 import SignUpScreen from "./screens/SignUpScreen";
 import SimulationResultsScreen from "./screens/SimulationResultsScreen";
@@ -36,7 +34,6 @@ import SimulationScreen from "./screens/SimulationScreen";
 import StatisticsScreen from "./screens/StatisticsScreen";
 import StudyMaterialsScreen from "./screens/StudyMaterialsScreen";
 
-// עצירת הספלאש הנייטיבי מלהיעלם אוטומטית
 SplashScreen.preventAutoHideAsync();
 
 export type RootStackParamList = {
@@ -55,7 +52,6 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 I18nManager.allowRTL(false);
 I18nManager.forceRTL(false);
 
-// פונקציית עזר לבדיקה אם הגרסה הנוכחית קטנה מהגרסה המינימלית
 const isVersionOlder = (currentVersion: string, minVersion: string) => {
   const v1 = currentVersion.split(".").map(Number);
   const v2 = minVersion.split(".").map(Number);
@@ -72,14 +68,10 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [isVideoFinished, setIsVideoFinished] = useState(false);
-
-  // סטייטים חדשים למערכת החסימה
   const [isUpdateRequired, setIsUpdateRequired] = useState(false);
   const [storeUrls, setStoreUrls] = useState({ ios: "", android: "" });
 
-  // אתחול RevenueCat ובדיקת גרסת אפליקציה מול פיירבייס
   useEffect(() => {
-    // 1. אתחול RevenueCat מיד כשהאפליקציה עולה
     const initRevenueCat = async () => {
       try {
         if (Platform.OS === "android") {
@@ -92,7 +84,6 @@ export default function App() {
       }
     };
 
-    // 2. בדיקת גרסת אפליקציה מול פיירבייס
     const checkAppVersion = async () => {
       try {
         const docRef = doc(db, "appConfig", "versionControl");
@@ -102,7 +93,6 @@ export default function App() {
           const data = docSnap.data();
           const minVersion =
             Platform.OS === "ios" ? data.minVersionIos : data.minVersionAndroid;
-          // שליפת הגרסה האמיתית של המכשיר (ברירת מחדל 1.0.0 אם לא נמצא)
           const currentVersion =
             Application.nativeApplicationVersion || "1.0.0";
 
@@ -123,7 +113,6 @@ export default function App() {
     checkAppVersion();
   }, []);
 
-  // האזנה לסטטוס התחברות
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
@@ -133,49 +122,90 @@ export default function App() {
 
         if (isEmailProvider && !currentUser.emailVerified) {
           setUser(null);
+          setIsLoading(false);
         } else {
-          setUser(currentUser);
+          // --- התחלת לוגיקת אימות המכשירים ---
+          try {
+            let localDeviceId = await AsyncStorage.getItem("deviceId");
+            if (!localDeviceId) {
+              localDeviceId = `dev_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+              await AsyncStorage.setItem("deviceId", localDeviceId);
+            }
 
+            const userRef = doc(db, "users", currentUser.uid);
+            const userSnap = await getDoc(userRef);
+
+            if (userSnap.exists()) {
+              const userData = userSnap.data();
+              const devices = userData.devices || [];
+
+              if (!devices.includes(localDeviceId)) {
+                if (devices.length >= 6) {
+                  // חסימה: המשתמש עבר את ה-6 מכשירים
+                  await signOut(auth);
+                  Alert.alert(
+                    "מגבלת מכשירים",
+                    "הגעת למגבלת המכשירים המותרת לחשבון זה (6 מכשירים). לא ניתן להתחבר ממכשיר חדש. אם החלפת מכשיר, אנא פנה לתמיכה.",
+                  );
+                  setUser(null);
+                  setIsLoading(false);
+                  return; // עוצר את המשך הפונקציה
+                } else {
+                  // אישור: מוסיף את המכשיר ומתריע למשתמש
+                  const updatedDevices = [...devices, localDeviceId];
+                  await updateDoc(userRef, { devices: updatedDevices });
+                  const remaining = 6 - updatedDevices.length;
+
+                  // אנחנו מציגים את ההודעה רק אם זה לא המכשיר הראשון אי פעם שנירשם
+                  if (devices.length > 0) {
+                    Alert.alert(
+                      "התחברות ממכשיר חדש",
+                      `זיהינו התחברות ממכשיר חדש. שים לב שנותרו לך עוד ${remaining} חיבורים ממכשירים שונים.`,
+                    );
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.error("Device verification error:", error);
+          }
+          // --- סוף לוגיקת אימות המכשירים ---
+
+          setUser(currentUser);
           try {
             await Purchases.logIn(currentUser.uid);
           } catch (error) {
             console.error("Error logging in to RevenueCat:", error);
           }
+          setIsLoading(false);
         }
       } else {
         setUser(null);
-
         try {
           await Purchases.logOut();
         } catch (error) {
           console.error("Error logging out of RevenueCat:", error);
         }
+        setIsLoading(false);
       }
-      setIsLoading(false);
     });
 
     return unsubscribe;
   }, []);
-  // מאזין לשינויים בסטטוס המנוי ברקע (למשל מיד אחרי רכישה מוצלחת)
-  // מאזין לשינויים בסטטוס המנוי ברקע
+
   useEffect(() => {
-    // 1. מגדירים את פונקציית המאזין
     const customerInfoUpdateListener = (info: any) => {
       console.log("Customer Info updated in background:", info);
     };
-
-    // 2. רושמים את המאזין
     Purchases.addCustomerInfoUpdateListener(customerInfoUpdateListener);
-
-    // 3. מסירים אותו בסגירה בעזרת הפקודה הייעודית
     return () => {
       Purchases.removeCustomerInfoUpdateListener(customerInfoUpdateListener);
     };
   }, []);
+
   const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
     if (status.isLoaded) {
       SplashScreen.hideAsync();
-
       if (status.didJustFinish) {
         setIsVideoFinished(true);
       }
@@ -216,11 +246,8 @@ export default function App() {
           onPress={() => {
             const url =
               Platform.OS === "ios" ? storeUrls.ios : storeUrls.android;
-            if (url) {
-              Linking.openURL(url);
-            } else {
-              Alert.alert("שגיאה", "קישור לחנות עדיין לא זמין.");
-            }
+            if (url) Linking.openURL(url);
+            else Alert.alert("שגיאה", "קישור לחנות עדיין לא זמין.");
           }}
         >
           <Text style={styles.updateButtonText}>עדכן עכשיו</Text>
@@ -283,7 +310,11 @@ export default function App() {
       >
         {user ? (
           <>
-            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen
+              name="Home"
+              component={HomeScreen}
+              options={{ headerShown: false }}
+            />
             <Stack.Screen
               name="StudyMaterials"
               component={StudyMaterialsScreen}
@@ -296,14 +327,10 @@ export default function App() {
               component={SimulationResultsScreen}
               options={{ title: "תוצאות המבחן" }}
             />
-            {/* מסך ה-Paywall החדש שלנו מוגדר כאן: */}
             <Stack.Screen
               name="Paywall"
               component={PaywallScreen}
-              options={{
-                presentation: "modal", // גורם למסך להחליק מלמטה (כמו פופ-אפ)
-                headerShown: false, // מסתיר את שורת הכותרת כדי שה-Paywall יתפוס את כל המסך
-              }}
+              options={{ presentation: "modal", headerShown: false }}
             />
           </>
         ) : (
@@ -366,9 +393,5 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  updateButtonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
+  updateButtonText: { color: "white", fontSize: 18, fontWeight: "bold" },
 });
