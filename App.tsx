@@ -1,12 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage"; // <-- הוספנו את האחסון המקומי
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import * as Application from "expo-application";
 import { AVPlaybackStatus, ResizeMode, Video } from "expo-av";
 import * as SplashScreen from "expo-splash-screen";
 import { User, onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc, updateDoc } from "firebase/firestore"; // <-- הוספנו את updateDoc
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -124,7 +124,7 @@ export default function App() {
           setUser(null);
           setIsLoading(false);
         } else {
-          // --- התחלת לוגיקת אימות המכשירים ---
+          // --- התחלת לוגיקת מעקב החלפת מכשירים עם איפוס חודשי ---
           try {
             let localDeviceId = await AsyncStorage.getItem("deviceId");
             if (!localDeviceId) {
@@ -137,39 +137,67 @@ export default function App() {
 
             if (userSnap.exists()) {
               const userData = userSnap.data();
-              const devices = userData.devices || [];
+              const lastDeviceId = userData.lastDeviceId;
+              let deviceChangeCount = userData.deviceChangeCount || 0;
+              const lastDeviceResetMonth = userData.lastDeviceResetMonth;
 
-              if (!devices.includes(localDeviceId)) {
-                if (devices.length >= 6) {
-                  // חסימה: המשתמש עבר את ה-6 מכשירים
+              // שליפת החודש הנוכחי בפורמט YYYY-MM (למשל: "2026-05")
+              const currentMonthStr = new Date().toISOString().slice(0, 7);
+
+              let updatePayload: any = {};
+              let requiresDbUpdate = false;
+
+              // 1. בדיקת איפוס חודשי (Lazy Reset)
+              if (lastDeviceResetMonth !== currentMonthStr) {
+                deviceChangeCount = 0; // מאפסים את המונה לוקאלית להמשך הבדיקה
+                updatePayload.deviceChangeCount = 0;
+                updatePayload.lastDeviceResetMonth = currentMonthStr;
+                requiresDbUpdate = true;
+              }
+
+              // 2. בדיקת המכשיר עצמו
+              if (!lastDeviceId) {
+                // משתמש ישן שעוד אין לו את השדות החדשים
+                updatePayload.lastDeviceId = localDeviceId;
+                updatePayload.deviceChangeCount = 0;
+                updatePayload.lastDeviceResetMonth = currentMonthStr;
+                await updateDoc(userRef, updatePayload);
+              } else if (lastDeviceId !== localDeviceId) {
+                // המזהה שונה - המשתמש החליף מכשיר!
+                if (deviceChangeCount >= 6) {
+                  // חסימה: עבר 3 החלפות בחודש הנוכחי
                   await signOut(auth);
                   Alert.alert(
-                    "מגבלת מכשירים",
-                    "הגעת למגבלת המכשירים המותרת לחשבון זה (6 מכשירים). לא ניתן להתחבר ממכשיר חדש. אם החלפת מכשיר, אנא פנה לתמיכה.",
+                    "מגבלת החלפת מכשירים",
+                    "הגעת למגבלת החלפת המכשירים המותרת לחשבון זה לחודש הנוכחי (3 פעמים). לא ניתן להתחבר ממכשיר זה. המונה יתאפס בתחילת החודש הבא.",
                   );
                   setUser(null);
                   setIsLoading(false);
-                  return; // עוצר את המשך הפונקציה
+                  return; // עוצר את התהליך
                 } else {
-                  // אישור: מוסיף את המכשיר ומתריע למשתמש
-                  const updatedDevices = [...devices, localDeviceId];
-                  await updateDoc(userRef, { devices: updatedDevices });
-                  const remaining = 6 - updatedDevices.length;
+                  // מאשר, מעלה את המונה ומודיע למשתמש
+                  const newCount = deviceChangeCount + 1;
+                  updatePayload.lastDeviceId = localDeviceId;
+                  updatePayload.deviceChangeCount = newCount;
+                  updatePayload.lastDeviceResetMonth = currentMonthStr;
 
-                  // אנחנו מציגים את ההודעה רק אם זה לא המכשיר הראשון אי פעם שנירשם
-                  if (devices.length > 0) {
-                    Alert.alert(
-                      "התחברות ממכשיר חדש",
-                      `זיהינו התחברות ממכשיר חדש. שים לב שנותרו לך עוד ${remaining} חיבורים ממכשירים שונים.`,
-                    );
-                  }
+                  await updateDoc(userRef, updatePayload);
+
+                  const remaining = 6 - newCount;
+                  Alert.alert(
+                    "התחברות ממכשיר שונה",
+                    `זיהינו התחברות ממכשיר שונה מזה שהתחברת אליו בפעם הקודמת. שים לב שנותרו לך עוד ${remaining} החלפות מכשיר החודש.`,
+                  );
                 }
+              } else if (requiresDbUpdate) {
+                // זה אותו מכשיר בדיוק, אבל התחלף חודש אז צריך רק לשמור את האיפוס של המונה
+                await updateDoc(userRef, updatePayload);
               }
             }
           } catch (error) {
             console.error("Device verification error:", error);
           }
-          // --- סוף לוגיקת אימות המכשירים ---
+          // --- סוף לוגיקת מעקב החלפת מכשירים ---
 
           setUser(currentUser);
           try {

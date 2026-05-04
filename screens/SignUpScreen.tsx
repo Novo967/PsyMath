@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage"; // <-- הוספנו
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { useNavigation } from "@react-navigation/native";
 import * as AppleAuthentication from "expo-apple-authentication";
@@ -60,7 +60,6 @@ export default function SignUpScreen() {
       const trialEndDate = new Date();
       trialEndDate.setDate(trialEndDate.getDate() + 3);
 
-      // --- הוספת המכשיר הנוכחי ברגע ההרשמה ---
       let localDeviceId = await AsyncStorage.getItem("deviceId");
       if (!localDeviceId) {
         localDeviceId = `dev_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -76,7 +75,9 @@ export default function SignUpScreen() {
         lastQuestionDate: new Date().toISOString(),
         createdAt: new Date().toISOString(),
         trialEndsAt: trialEndDate.toISOString(),
-        devices: [localDeviceId], // שומר את המכשיר הראשון במערך
+        lastDeviceId: localDeviceId,
+        deviceChangeCount: 0,
+        lastDeviceResetMonth: new Date().toISOString().slice(0, 7), // שומר את החודש הנוכחי בפורמט YYYY-MM
       });
     }
   };

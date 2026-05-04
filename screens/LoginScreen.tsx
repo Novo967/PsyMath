@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage"; // <-- הוספנו
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { useNavigation } from "@react-navigation/native";
 import {
@@ -46,7 +46,6 @@ export default function LoginScreen() {
     const userRef = doc(db, "users", user.uid);
     const docSnap = await getDoc(userRef);
     if (!docSnap.exists()) {
-      // --- הוספת המכשיר הנוכחי ---
       let localDeviceId = await AsyncStorage.getItem("deviceId");
       if (!localDeviceId) {
         localDeviceId = `dev_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -61,7 +60,9 @@ export default function LoginScreen() {
         dailyLimit: 10,
         lastQuestionDate: new Date().toISOString(),
         createdAt: new Date().toISOString(),
-        devices: [localDeviceId], // שומר את המכשיר הראשון במערך
+        lastDeviceId: localDeviceId,
+        deviceChangeCount: 0,
+        lastDeviceResetMonth: new Date().toISOString().slice(0, 7), // שומר את החודש הנוכחי
       });
     }
   };
@@ -289,6 +290,6 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   submitButtonText: { color: "#FFF", fontSize: 18, fontWeight: "700" },
-  linkContainer: { marginTop: 15, alignItems: "center" },
-  linkText: { color: "#4A90E2", fontSize: 16, fontWeight: "600" },
+  loginLinkContainer: { marginTop: 15, alignItems: "center" },
+  loginLinkText: { color: "#4A90E2", fontSize: 16, fontWeight: "600" },
 });
