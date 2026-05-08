@@ -24,6 +24,7 @@ import Purchases from "react-native-purchases";
 import { auth, db } from "./firebaseConfig";
 
 // Import Screens
+import ChapterScreen from "./screens/ChapterScreen";
 import HomeScreen from "./screens/HomeScreen";
 import LoginScreen from "./screens/LoginScreen";
 import PaywallScreen from "./screens/PaywallScreen";
@@ -46,6 +47,7 @@ export type RootStackParamList = {
   Login: undefined;
   SimulationResultsScreen: undefined;
   Paywall: undefined;
+  ChapterScreen: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -350,6 +352,7 @@ export default function App() {
             <Stack.Screen name="Practice" component={PracticeScreen} />
             <Stack.Screen name="Simulation" component={SimulationScreen} />
             <Stack.Screen name="Statistics" component={StatisticsScreen} />
+            <Stack.Screen name="ChapterScreen" component={ChapterScreen} />
             <Stack.Screen
               name="SimulationResultsScreen"
               component={SimulationResultsScreen}
