@@ -18,7 +18,7 @@ async function uploadAlgebraData() {
     console.log("קורא את קובץ הנתונים...");
     const dataPath = path.join(
       path.dirname(process.argv[1]),
-      "algebra_data.json",
+      "geometry_data.json",
     );
     const fileContent = fs.readFileSync(dataPath, "utf8");
     const chapterData = JSON.parse(fileContent);

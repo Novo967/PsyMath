@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Animated,
   FlatList,
+  RefreshControl,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -14,6 +15,7 @@ import {
   View,
 } from "react-native";
 import { db } from "../firebaseConfig";
+
 interface Chapter {
   id: string;
   title: string;
@@ -21,40 +23,43 @@ interface Chapter {
 }
 
 const CACHE_KEY = "chapters_cache";
-const CACHE_EXPIRATION_MS = 60 * 60 * 1000; // שעה אחת במילישניות
+const CACHE_EXPIRATION_MS = 60 * 60 * 1000; // שעה
 
 export default function StudyMaterialsScreen() {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false); // <--- סטייט חדש לריענון
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const navigation = useNavigation<any>();
+
   useEffect(() => {
     fetchChapters();
   }, []);
 
-  const fetchChapters = async () => {
+  // הוספנו פרמטר forceRefresh כדי שנוכל לעקוף את הקאש כשהמשתמש מרענן ידנית
+  const fetchChapters = async (forceRefresh = false) => {
     try {
-      setIsLoading(true);
+      if (!forceRefresh) setIsLoading(true);
 
-      // 1. קודם נבדוק אם יש לנו מידע שמור מקומית
-      const cachedDataStr = await AsyncStorage.getItem(CACHE_KEY);
+      // נבדוק קאש רק אם לא ביקשו ריענון בכוח
+      if (!forceRefresh) {
+        const cachedDataStr = await AsyncStorage.getItem(CACHE_KEY);
 
-      if (cachedDataStr) {
-        const cachedData = JSON.parse(cachedDataStr);
-        const now = Date.now();
+        if (cachedDataStr) {
+          const cachedData = JSON.parse(cachedDataStr);
+          const now = Date.now();
 
-        // נבדוק אם עברה פחות משעה מאז השמירה האחרונה
-        if (now - cachedData.timestamp < CACHE_EXPIRATION_MS) {
-          console.log("טוען חומר מהקאש (שמירה מקומית)");
-          setChapters(cachedData.chapters);
-          setIsLoading(false);
-          return; // סיימנו, אין צורך למשוך מפיירבייס
+          if (now - cachedData.timestamp < CACHE_EXPIRATION_MS) {
+            console.log("טוען חומר מהקאש (שמירה מקומית)");
+            setChapters(cachedData.chapters);
+            setIsLoading(false);
+            return;
+          }
         }
       }
 
-      // 2. אם אין קאש או שהוא פג תוקף, נמשוך מפיירבייס
       console.log("טוען חומר מפיירבייס");
       const querySnapshot = await getDocs(collection(db, "study_chapters"));
       const fetchedChapters: Chapter[] = [];
@@ -68,11 +73,11 @@ export default function StudyMaterialsScreen() {
         } as Chapter);
       });
 
-      // הערה: אם תרצה שהפרקים יופיעו בסדר מסוים, כדאי להוסיף להם שדה "order" ב-DB ולמיין פה.
+      // מיון הפרקים לפי שדה order כדי שיופיעו בסדר הגיוני (אלגברה, גיאומטריה...)
+      fetchedChapters.sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
 
       setChapters(fetchedChapters);
 
-      // 3. נשמור את המידע החדש בטלפון יחד עם חותמת זמן
       await AsyncStorage.setItem(
         CACHE_KEY,
         JSON.stringify({
@@ -84,25 +89,14 @@ export default function StudyMaterialsScreen() {
       console.error("שגיאה בטעינת הפרקים:", error);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false); // עוצרים את האנימציה של הריענון
     }
   };
 
-  const showToast = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-    timeoutRef.current = setTimeout(() => {
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }, 2000);
+  // פונקציה שמופעלת כשהמשתמש מושך למטה
+  const onRefresh = () => {
+    setIsRefreshing(true);
+    fetchChapters(true); // קוראים לפונקציה עם true כדי לעקוף את הקאש
   };
 
   return (
@@ -124,6 +118,14 @@ export default function StudyMaterialsScreen() {
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContainer}
             showsVerticalScrollIndicator={false}
+            // --- הוספנו את ה-RefreshControl ל-FlatList ---
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefreshing}
+                onRefresh={onRefresh}
+                tintColor="#ffffff"
+              />
+            }
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={styles.chapterCard}
@@ -142,7 +144,6 @@ export default function StudyMaterialsScreen() {
                   <Text style={styles.chapterTitle}>{item.title}</Text>
                 </View>
                 <View style={styles.iconContainer}>
-                  {/* במידה ואייקון חסר ב-DB, נשים אייקון של ספר כדירת מחדל */}
                   {/* @ts-ignore */}
                   <Ionicons
                     name={item.icon || "book-outline"}
@@ -154,17 +155,12 @@ export default function StudyMaterialsScreen() {
             )}
           />
         )}
-
-        <Animated.View
-          style={[styles.toastContainer, { opacity: fadeAnim }]}
-          pointerEvents="none"
-        >
-          <Text style={styles.toastText}>יעלה בהמשך</Text>
-        </Animated.View>
       </View>
     </SafeAreaView>
   );
 }
+
+// ... הסטיילים נשארים בדיוק אותו דבר, השמטתי אותם כאן כדי לחסוך מקום
 
 const styles = StyleSheet.create({
   safeArea: {

@@ -9,7 +9,6 @@ import {
     View,
 } from "react-native";
 
-// הגדרת הטיפוסים (Types) בהתאם למבנה שבנינו בפיירבייס
 interface ContentBlock {
   type: "title" | "text" | "tip" | "rule";
   content: string;
@@ -22,18 +21,13 @@ interface SubTopic {
 }
 
 export default function ChapterScreen({ route, navigation }: any) {
-  // אנחנו מקבלים את האובייקט של הפרק מהמסך הקודם
   const { chapter } = route.params;
-
-  // משתנה State ששומר איזה תת-נושא פתוח כרגע (לפי ה-ID שלו)
   const [expandedTopicId, setExpandedTopicId] = useState<string | null>(null);
 
   const toggleTopic = (id: string) => {
-    // אם לחצו על נושא פתוח - נסגור אותו. אם לחצו על סגור - נפתח אותו.
     setExpandedTopicId((prev) => (prev === id ? null : id));
   };
 
-  // פונקציה שמחליטה איך לרנדר כל חתיכת תוכן (בלוק)
   const renderBlock = (block: ContentBlock, index: number) => {
     switch (block.type) {
       case "title":
@@ -73,7 +67,6 @@ export default function ChapterScreen({ route, navigation }: any) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* הדר עליון עם כפתור חזור */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -82,14 +75,13 @@ export default function ChapterScreen({ route, navigation }: any) {
           <Ionicons name="chevron-forward" size={28} color="#ffffff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{chapter.title}</Text>
-        <View style={{ width: 40 }} /> {/* שומר על הכותרת באמצע */}
+        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* עוברים על כל תתי הנושאים ומייצרים להם כרטיסייה נפתחת */}
         {chapter.subTopics?.map((topic: SubTopic) => (
           <View key={topic.id} style={styles.topicCard}>
             <TouchableOpacity
@@ -107,11 +99,11 @@ export default function ChapterScreen({ route, navigation }: any) {
               <Text style={styles.topicTitle}>{topic.title}</Text>
             </TouchableOpacity>
 
-            {/* אם הנושא פתוח, נציג את התוכן שלו */}
             {expandedTopicId === topic.id && (
               <View style={styles.topicContent}>
-                {topic.contentBlocks?.map((block, index) =>
-                  renderBlock(block, index),
+                {topic.contentBlocks?.map(
+                  (block: ContentBlock, index: number) =>
+                    renderBlock(block, index),
                 )}
               </View>
             )}
@@ -156,7 +148,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: 16,
     marginBottom: 16,
-    overflow: "hidden", // כדי שהתוכן לא יחרוג מהפינות המעוגלות
+    overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
