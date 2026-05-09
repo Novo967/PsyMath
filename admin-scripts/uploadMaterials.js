@@ -13,12 +13,12 @@ admin.initializeApp({
 const db = admin.firestore();
 
 // פונקציה להעלאת הנתונים
-async function uploadAlgebraData() {
+async function uploadGeometryData() {
   try {
     console.log("קורא את קובץ הנתונים...");
     const dataPath = path.join(
       path.dirname(process.argv[1]),
-      "word_problems_data.json",
+      "geometry_data.json",
     );
     const fileContent = fs.readFileSync(dataPath, "utf8");
     const chapterData = JSON.parse(fileContent);
@@ -40,4 +40,4 @@ async function uploadAlgebraData() {
 }
 
 // הפעלת הפונקציה
-uploadAlgebraData();
+uploadGeometryData();
