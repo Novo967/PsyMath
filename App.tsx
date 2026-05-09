@@ -23,6 +23,7 @@ import { AVPlaybackStatus, ResizeMode, Video } from "expo-av";
 import * as SplashScreen from "expo-splash-screen";
 
 // Import Screens
+import ChapterScreen from "./screens/ChapterScreen";
 import HomeScreen from "./screens/HomeScreen";
 import LoginScreen from "./screens/LoginScreen";
 import PracticeScreen from "./screens/PracticeScreen";
@@ -44,6 +45,7 @@ export type RootStackParamList = {
   SignUp: undefined;
   Login: undefined;
   SimulationResultsScreen: undefined;
+  ChapterScreen: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -249,6 +251,7 @@ export default function App() {
             <Stack.Screen name="Practice" component={PracticeScreen} />
             <Stack.Screen name="Simulation" component={SimulationScreen} />
             <Stack.Screen name="Statistics" component={StatisticsScreen} />
+            <Stack.Screen name="ChapterScreen" component={ChapterScreen} />
             <Stack.Screen
               name="SimulationResultsScreen"
               component={SimulationResultsScreen}
