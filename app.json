@@ -11,7 +11,7 @@
     "ios": {
       "bundleIdentifier": "com.novrubin.psychometricmathematics",
       "usesAppleSignIn": true,
-      "buildNumber": "4",
+      "buildNumber": "7",
       "supportsTablet": true,
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
