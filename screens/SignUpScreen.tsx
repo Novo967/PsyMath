@@ -1,11 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { useNavigation } from "@react-navigation/native";
-import * as AppleAuthentication from "expo-apple-authentication"; // <-- הוספנו את ספריית אפל
+import * as AppleAuthentication from "expo-apple-authentication";
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
-  OAuthProvider, // <-- הוספנו עבור אפל
+  OAuthProvider,
   sendEmailVerification,
   signInWithCredential,
   signOut,
@@ -38,7 +39,7 @@ export default function SignUpScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [isAppleLoading, setIsAppleLoading] = useState(false); // <-- סטייט לטעינה של אפל
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -56,6 +57,15 @@ export default function SignUpScreen() {
     const docSnap = await getDoc(userRef);
 
     if (!docSnap.exists()) {
+      const trialEndDate = new Date();
+      trialEndDate.setDate(trialEndDate.getDate() + 3);
+
+      let localDeviceId = await AsyncStorage.getItem("deviceId");
+      if (!localDeviceId) {
+        localDeviceId = `dev_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        await AsyncStorage.setItem("deviceId", localDeviceId);
+      }
+
       await setDoc(userRef, {
         email: user.email,
         name: user.displayName || fallbackName || "",
@@ -64,6 +74,10 @@ export default function SignUpScreen() {
         dailyLimit: 10,
         lastQuestionDate: new Date().toISOString(),
         createdAt: new Date().toISOString(),
+        trialEndsAt: trialEndDate.toISOString(),
+        lastDeviceId: localDeviceId,
+        deviceChangeCount: 0,
+        lastDeviceResetMonth: new Date().toISOString().slice(0, 7), // שומר את החודש הנוכחי בפורמט YYYY-MM
       });
     }
   };
@@ -90,10 +104,7 @@ export default function SignUpScreen() {
       );
       userCreated = true;
 
-      await updateProfile(userCredential.user, {
-        displayName: name,
-      });
-
+      await updateProfile(userCredential.user, { displayName: name });
       await sendEmailVerification(userCredential.user);
       await createUserDocument(userCredential.user, name);
 
@@ -149,7 +160,6 @@ export default function SignUpScreen() {
     }
   };
 
-  // --- לוגיקת ההתחברות של אפל ---
   const handleAppleSignIn = async () => {
     setIsAppleLoading(true);
     try {
@@ -160,9 +170,8 @@ export default function SignUpScreen() {
         ],
       });
 
-      if (!credential.identityToken) {
+      if (!credential.identityToken)
         throw new Error("No identity token provided by Apple");
-      }
 
       const provider = new OAuthProvider("apple.com");
       const authCredential = provider.credential({
@@ -171,7 +180,6 @@ export default function SignUpScreen() {
 
       const userCredential = await signInWithCredential(auth, authCredential);
 
-      // חילוץ שם המשתמש (אפל שולחת את זה רק בהתחברות הראשונה אי פעם!)
       let fallbackName = "";
       if (credential.fullName) {
         const givenName = credential.fullName.givenName || "";
@@ -181,9 +189,7 @@ export default function SignUpScreen() {
 
       await createUserDocument(userCredential.user, fallbackName);
     } catch (error: any) {
-      if (error.code === "ERR_REQUEST_CANCELED") {
-        console.log("Apple sign-in was canceled by the user");
-      } else {
+      if (error.code !== "ERR_REQUEST_CANCELED") {
         console.error("Apple Sign-In Error:", error);
         Alert.alert("שגיאה", "לא הצלחנו להתחבר דרך אפל.");
       }
@@ -210,7 +216,6 @@ export default function SignUpScreen() {
             </View>
 
             <View style={styles.form}>
-              {/* --- כפתור התחברות עם אפל (יוצג רק ב-iOS) --- */}
               {Platform.OS === "ios" && (
                 <View style={styles.appleButtonWrapper}>
                   {isAppleLoading ? (
@@ -257,7 +262,6 @@ export default function SignUpScreen() {
                 <View style={styles.divider} />
               </View>
 
-              {/* --- שדה השם הפרטי --- */}
               <View style={styles.inputContainer}>
                 <Ionicons
                   name="person-outline"
@@ -389,14 +393,8 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: "800", color: "#2D3748", marginBottom: 8 },
   subtitle: { fontSize: 16, color: "#718096" },
   form: { gap: 16 },
-  appleButtonWrapper: {
-    width: "100%",
-    height: 56,
-  },
-  appleButton: {
-    width: "100%",
-    height: "100%",
-  },
+  appleButtonWrapper: { width: "100%", height: 56 },
+  appleButton: { width: "100%", height: "100%" },
   googleButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -448,13 +446,6 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   submitButtonText: { color: "#FFF", fontSize: 18, fontWeight: "700" },
-  loginLinkContainer: {
-    marginTop: 15,
-    alignItems: "center",
-  },
-  loginLinkText: {
-    color: "#4A90E2",
-    fontSize: 16,
-    fontWeight: "600",
-  },
+  loginLinkContainer: { marginTop: 15, alignItems: "center" },
+  loginLinkText: { color: "#4A90E2", fontSize: 16, fontWeight: "600" },
 });
