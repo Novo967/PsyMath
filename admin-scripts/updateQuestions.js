@@ -1,11 +1,11 @@
 const admin = require("firebase-admin");
 
 // ייבוא קובץ המפתחות הסודיים (ודא שהשם והנתיב נכונים)
-const serviceAccount = require("./serviceAccountKey.json"); 
+const serviceAccount = require("./serviceAccountKey.json");
 
 // אתחול החיבור לפיירבייס
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
+  credential: admin.credential.cert(serviceAccount),
 });
 
 const db = admin.firestore();
@@ -30,7 +30,7 @@ async function updateBadQuestions() {
       console.error(`Error updating question ID: ${q.id}`, error);
     }
   }
-  
+
   console.log("All bad questions have been successfully replaced!");
   process.exit(0);
 }
