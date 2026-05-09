@@ -22,10 +22,17 @@ interface SubTopic {
 
 export default function ChapterScreen({ route, navigation }: any) {
   const { chapter } = route.params;
-  const [expandedTopicId, setExpandedTopicId] = useState<string | null>(null);
+
+  // שינוי 1: מערך השומר את כל ה-IDs של תתי-הנושאים הפתוחים כרגע
+  const [expandedTopicIds, setExpandedTopicIds] = useState<string[]>([]);
 
   const toggleTopic = (id: string) => {
-    setExpandedTopicId((prev) => (prev === id ? null : id));
+    setExpandedTopicIds((prev) =>
+      // אם הנושא כבר פתוח - נסיר אותו מהמערך. אם הוא סגור - נוסיף אותו.
+      prev.includes(id)
+        ? prev.filter((topicId) => topicId !== id)
+        : [...prev, id],
+    );
   };
 
   const renderBlock = (block: ContentBlock, index: number) => {
@@ -67,15 +74,9 @@ export default function ChapterScreen({ route, navigation }: any) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      {/* שינוי 2 ו-3: הסרת כפתור החזור, יישור הכותרת, והורדה קלה למטה בסטייל */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Ionicons name="chevron-forward" size={28} color="#ffffff" />
-        </TouchableOpacity>
         <Text style={styles.headerTitle}>{chapter.title}</Text>
-        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView
@@ -91,7 +92,9 @@ export default function ChapterScreen({ route, navigation }: any) {
             >
               <Ionicons
                 name={
-                  expandedTopicId === topic.id ? "chevron-up" : "chevron-down"
+                  expandedTopicIds.includes(topic.id)
+                    ? "chevron-up"
+                    : "chevron-down"
                 }
                 size={24}
                 color="#4A90E2"
@@ -99,7 +102,8 @@ export default function ChapterScreen({ route, navigation }: any) {
               <Text style={styles.topicTitle}>{topic.title}</Text>
             </TouchableOpacity>
 
-            {expandedTopicId === topic.id && (
+            {/* בודק אם ה-ID של הנושא נמצא במערך הנושאים הפתוחים */}
+            {expandedTopicIds.includes(topic.id) && (
               <View style={styles.topicContent}>
                 {topic.contentBlocks?.map(
                   (block: ContentBlock, index: number) =>
@@ -120,22 +124,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#9dbde9",
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    alignItems: "center", // ממורכז למרכז המסך (אופקית)
+    justifyContent: "center",
     paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingTop: 30, // הגדלתי את הריווח העליון כדי להרחיק את הכותרת מהקצה
     paddingBottom: 20,
   },
-  backButton: {
-    padding: 8,
-  },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 22, // הגדלתי טיפה את הכותרת שתיראה טוב יותר בלי החץ
     fontWeight: "700",
     color: "#ffffff",
     textAlign: "center",
-    flex: 1,
   },
   container: {
     flex: 1,
