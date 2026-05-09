@@ -22,24 +22,10 @@ interface SubTopic {
 
 export default function ChapterScreen({ route, navigation }: any) {
   const { chapter } = route.params;
-<<<<<<< HEAD
-
-  // שינוי 1: מערך השומר את כל ה-IDs של תתי-הנושאים הפתוחים כרגע
-  const [expandedTopicIds, setExpandedTopicIds] = useState<string[]>([]);
-
-  const toggleTopic = (id: string) => {
-    setExpandedTopicIds((prev) =>
-      // אם הנושא כבר פתוח - נסיר אותו מהמערך. אם הוא סגור - נוסיף אותו.
-      prev.includes(id)
-        ? prev.filter((topicId) => topicId !== id)
-        : [...prev, id],
-    );
-=======
   const [expandedTopicId, setExpandedTopicId] = useState<string | null>(null);
 
   const toggleTopic = (id: string) => {
     setExpandedTopicId((prev) => (prev === id ? null : id));
->>>>>>> 2c2adbae0d809a2427e02f4c73e80fdeda2f2778
   };
 
   const renderBlock = (block: ContentBlock, index: number) => {
@@ -81,11 +67,6 @@ export default function ChapterScreen({ route, navigation }: any) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-<<<<<<< HEAD
-      {/* שינוי 2 ו-3: הסרת כפתור החזור, יישור הכותרת, והורדה קלה למטה בסטייל */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>{chapter.title}</Text>
-=======
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -95,7 +76,6 @@ export default function ChapterScreen({ route, navigation }: any) {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{chapter.title}</Text>
         <View style={{ width: 40 }} />
->>>>>>> 2c2adbae0d809a2427e02f4c73e80fdeda2f2778
       </View>
 
       <ScrollView
@@ -111,13 +91,7 @@ export default function ChapterScreen({ route, navigation }: any) {
             >
               <Ionicons
                 name={
-<<<<<<< HEAD
-                  expandedTopicIds.includes(topic.id)
-                    ? "chevron-up"
-                    : "chevron-down"
-=======
                   expandedTopicId === topic.id ? "chevron-up" : "chevron-down"
->>>>>>> 2c2adbae0d809a2427e02f4c73e80fdeda2f2778
                 }
                 size={24}
                 color="#4A90E2"
@@ -125,12 +99,7 @@ export default function ChapterScreen({ route, navigation }: any) {
               <Text style={styles.topicTitle}>{topic.title}</Text>
             </TouchableOpacity>
 
-<<<<<<< HEAD
-            {/* בודק אם ה-ID של הנושא נמצא במערך הנושאים הפתוחים */}
-            {expandedTopicIds.includes(topic.id) && (
-=======
             {expandedTopicId === topic.id && (
->>>>>>> 2c2adbae0d809a2427e02f4c73e80fdeda2f2778
               <View style={styles.topicContent}>
                 {topic.contentBlocks?.map(
                   (block: ContentBlock, index: number) =>
@@ -151,19 +120,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#9dbde9",
   },
   header: {
-<<<<<<< HEAD
-    alignItems: "center", // ממורכז למרכז המסך (אופקית)
-    justifyContent: "center",
-    paddingHorizontal: 16,
-    paddingTop: 30, // הגדלתי את הריווח העליון כדי להרחיק את הכותרת מהקצה
-    paddingBottom: 20,
-  },
-  headerTitle: {
-    fontSize: 22, // הגדלתי טיפה את הכותרת שתיראה טוב יותר בלי החץ
-    fontWeight: "700",
-    color: "#ffffff",
-    textAlign: "center",
-=======
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -180,7 +136,6 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     textAlign: "center",
     flex: 1,
->>>>>>> 2c2adbae0d809a2427e02f4c73e80fdeda2f2778
   },
   container: {
     flex: 1,
