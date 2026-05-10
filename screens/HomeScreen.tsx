@@ -33,7 +33,7 @@ interface Props {
 export default function HomeScreen({ navigation }: Props) {
   const [isMenuVisible, setMenuVisible] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
-  const [userName, setUserName] = useState("חבר"); // <-- סטייט לשם המשתמש
+  const [userName, setUserName] = useState(""); // <-- סטייט לשם המשתמש
 
   // הגדרת משתנה האנימציה - התפריט מתחיל מחוץ למסך מצד ימין (ברוחב המסך)
   const slideAnim = useRef(new Animated.Value(width)).current;
