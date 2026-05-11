@@ -23,6 +23,7 @@ import {
   View,
 } from "react-native";
 import { captureRef } from "react-native-view-shot";
+import { useTheme } from "../contexts/ThemeContexts"; // ייבוא ה-Hook החדש
 import { auth, db } from "../firebaseConfig";
 
 const { width } = Dimensions.get("window");
@@ -47,6 +48,9 @@ interface SimulationResult {
 }
 
 export default function StatisticsScreen() {
+  const { theme } = useTheme(); // שליפת ערכת הנושא
+  const styles = getStyles(theme); // יצירת סטיילים דינמיים
+
   const viewToSnapshotRef = useRef<View>(null);
   const navigation = useNavigation<any>();
 
@@ -56,17 +60,14 @@ export default function StatisticsScreen() {
   const [accuracyRate, setAccuracyRate] = useState(0);
   const [improvementTrend, setImprovementTrend] = useState("0%");
 
-  // הסטייטים החדשים לניהול כל הסימולציות
   const [allSimulations, setAllSimulations] = useState<SimulationResult[]>([]);
   const [showAllHistory, setShowAllHistory] = useState(false);
 
-  // States for toggles
   const [showAccuracy, setShowAccuracy] = useState(true);
   const [showQuestions, setShowQuestions] = useState(true);
   const [showTrend, setShowTrend] = useState(true);
   const [showHistory, setShowHistory] = useState(true);
 
-  // State to manage the share menu visibility
   const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
 
   useFocusEffect(
@@ -145,7 +146,6 @@ export default function StatisticsScreen() {
         setImprovementTrend("0%");
       }
 
-      // הופכים ושומרים את כל ההיסטוריה במקום לחתוך
       formattedSims.reverse();
       setAllSimulations(formattedSims);
     } catch (error) {
@@ -224,7 +224,6 @@ export default function StatisticsScreen() {
     }
   };
 
-  // קובע כמה סימולציות נציג בפועל
   const simsToDisplay = showAllHistory
     ? allSimulations
     : allSimulations.slice(0, 3);
@@ -237,8 +236,10 @@ export default function StatisticsScreen() {
           { justifyContent: "center", alignItems: "center" },
         ]}
       >
-        <ActivityIndicator size="large" color="#4A90E2" />
-        <Text style={{ marginTop: 15, color: "#4A5568" }}>טוען נתונים...</Text>
+        <ActivityIndicator size="large" color={theme.primaryColor} />
+        <Text style={{ marginTop: 15, color: theme.textSecondary }}>
+          טוען נתונים...
+        </Text>
       </View>
     );
   }
@@ -247,7 +248,7 @@ export default function StatisticsScreen() {
     <SafeAreaView style={styles.safeArea}>
       {isFetchingDetails && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#4A90E2" />
+          <ActivityIndicator size="large" color={theme.primaryColor} />
           <Text style={styles.loadingOverlayText}>מכין את פרטי המבחן...</Text>
         </View>
       )}
@@ -257,7 +258,6 @@ export default function StatisticsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* אזור הצילום - לא מושפע משאר האלמנטים במסך */}
         <View
           ref={viewToSnapshotRef}
           collapsable={false}
@@ -276,7 +276,7 @@ export default function StatisticsScreen() {
                   <Ionicons
                     name="checkmark-circle-outline"
                     size={24}
-                    color="#48BB78"
+                    color={theme.successBorder}
                   />
                   <Text style={styles.statValue}>{accuracyRate}%</Text>
                   <Text style={styles.statLabel}>דיוק כללי</Text>
@@ -299,7 +299,7 @@ export default function StatisticsScreen() {
               style={[
                 styles.miniChartContainer,
                 improvementTrend.startsWith("-") && {
-                  backgroundColor: "#FFF5F5",
+                  backgroundColor: theme.errorBackground,
                 },
               ]}
             >
@@ -307,7 +307,9 @@ export default function StatisticsScreen() {
                 <Text
                   style={[
                     styles.trendLabel,
-                    improvementTrend.startsWith("-") && { color: "#C53030" },
+                    improvementTrend.startsWith("-") && {
+                      color: theme.errorText,
+                    },
                   ]}
                 >
                   מגמת שיפור כללית
@@ -315,7 +317,9 @@ export default function StatisticsScreen() {
                 <Text
                   style={[
                     styles.trendValue,
-                    improvementTrend.startsWith("-") && { color: "#E53E3E" },
+                    improvementTrend.startsWith("-") && {
+                      color: theme.errorBorder,
+                    },
                   ]}
                 >
                   {improvementTrend}
@@ -343,15 +347,19 @@ export default function StatisticsScreen() {
                       <View
                         style={[
                           styles.simChangeContainer,
-                          sim.changeNum < 0 && { backgroundColor: "#FFF5F5" },
+                          sim.changeNum < 0 && {
+                            backgroundColor: theme.errorBackground,
+                          },
                           sim.changeNum === 0 && { backgroundColor: "#EDF2F7" },
                         ]}
                       >
                         <Text
                           style={[
                             styles.simChangeText,
-                            sim.changeNum < 0 && { color: "#E53E3E" },
-                            sim.changeNum === 0 && { color: "#718096" },
+                            sim.changeNum < 0 && { color: theme.errorText },
+                            sim.changeNum === 0 && {
+                              color: theme.textSecondary,
+                            },
                           ]}
                         >
                           {sim.change}
@@ -367,10 +375,10 @@ export default function StatisticsScreen() {
                           size={16}
                           color={
                             sim.changeNum > 0
-                              ? "#48BB78"
+                              ? theme.successBorder
                               : sim.changeNum < 0
-                                ? "#E53E3E"
-                                : "#718096"
+                                ? theme.errorBorder
+                                : theme.textSecondary
                           }
                         />
                       </View>
@@ -381,20 +389,24 @@ export default function StatisticsScreen() {
                     </TouchableOpacity>
                   ))}
 
-                  {/* כפתור הצגת כל ההיסטוריה */}
                   {allSimulations.length > 3 && (
                     <TouchableOpacity
                       style={styles.showMoreButton}
                       onPress={() => setShowAllHistory(!showAllHistory)}
                       activeOpacity={0.7}
                     >
-                      <Text style={styles.showMoreText}>
+                      <Text
+                        style={[
+                          styles.showMoreText,
+                          { color: theme.primaryColor },
+                        ]}
+                      >
                         {showAllHistory ? "הצג פחות" : "הצג את כל ההיסטוריה"}
                       </Text>
                       <Ionicons
                         name={showAllHistory ? "chevron-up" : "chevron-down"}
                         size={16}
-                        color="#4A90E2"
+                        color={theme.primaryColor}
                       />
                     </TouchableOpacity>
                   )}
@@ -404,14 +416,28 @@ export default function StatisticsScreen() {
           )}
         </View>
 
-        {/* אזור פעולות שיתוף */}
         {!isShareMenuOpen ? (
           <TouchableOpacity
-            style={styles.mainShareButton}
+            style={[
+              styles.mainShareButton,
+              {
+                backgroundColor: theme.primaryColor,
+                shadowColor: theme.primaryColor,
+              },
+            ]}
             onPress={() => setIsShareMenuOpen(true)}
           >
-            <Ionicons name="share-social-outline" size={22} color="#FFF" />
-            <Text style={styles.mainShareButtonText}> לא תשוויץ קצת? </Text>
+            <Ionicons
+              name="share-social-outline"
+              size={22}
+              color={theme.textLight}
+            />
+            <Text
+              style={[styles.mainShareButtonText, { color: theme.textLight }]}
+            >
+              {" "}
+              לא תשוויץ קצת?{" "}
+            </Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.editPanel}>
@@ -423,7 +449,7 @@ export default function StatisticsScreen() {
                 <Ionicons
                   name="close-circle-outline"
                   size={26}
-                  color="#A0AEC0"
+                  color={theme.textSecondary}
                 />
               </TouchableOpacity>
               <Text style={styles.editPanelTitle}>בחר מה לשתף:</Text>
@@ -433,7 +459,7 @@ export default function StatisticsScreen() {
               <Switch
                 value={showAccuracy}
                 onValueChange={setShowAccuracy}
-                trackColor={{ true: "#0d78f2" }}
+                trackColor={{ true: theme.primaryColor }}
                 thumbColor={"#f4f3f4"}
               />
               <Text style={styles.toggleLabel}>אחוז דיוק</Text>
@@ -443,7 +469,7 @@ export default function StatisticsScreen() {
               <Switch
                 value={showQuestions}
                 onValueChange={setShowQuestions}
-                trackColor={{ true: "#0d78f2" }}
+                trackColor={{ true: theme.primaryColor }}
                 thumbColor={"#f4f3f4"}
               />
               <Text style={styles.toggleLabel}>מספר שאלות שפתרת</Text>
@@ -454,7 +480,7 @@ export default function StatisticsScreen() {
                 <Switch
                   value={showTrend}
                   onValueChange={setShowTrend}
-                  trackColor={{ true: "#0d78f2" }}
+                  trackColor={{ true: theme.primaryColor }}
                   thumbColor={"#f4f3f4"}
                 />
                 <Text style={styles.toggleLabel}>מגמת שיפור</Text>
@@ -465,15 +491,27 @@ export default function StatisticsScreen() {
               <Switch
                 value={showHistory}
                 onValueChange={setShowHistory}
-                trackColor={{ true: "#0d78f2" }}
+                trackColor={{ true: theme.primaryColor }}
                 thumbColor={"#f4f3f4"}
               />
               <Text style={styles.toggleLabel}>היסטוריית סימולציות</Text>
             </View>
 
-            <TouchableOpacity style={styles.shareButton} onPress={onShare}>
-              <Ionicons name="paper-plane-outline" size={20} color="#FFF" />
-              <Text style={styles.shareText}>שתף עכשיו</Text>
+            <TouchableOpacity
+              style={[
+                styles.shareButton,
+                { backgroundColor: theme.successBorder },
+              ]}
+              onPress={onShare}
+            >
+              <Ionicons
+                name="paper-plane-outline"
+                size={20}
+                color={theme.textLight}
+              />
+              <Text style={[styles.shareText, { color: theme.textLight }]}>
+                שתף עכשיו
+              </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -482,208 +520,205 @@ export default function StatisticsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#9dbde9" },
-  scrollView: { flex: 1 },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 80,
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(255, 255, 255, 0.85)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000,
-  },
-  loadingOverlayText: {
-    marginTop: 12,
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#2D3748",
-  },
+const getStyles = (theme: any) =>
+  StyleSheet.create({
+    safeArea: { flex: 1, backgroundColor: theme.backgroundColor },
+    scrollView: { flex: 1 },
+    scrollContent: {
+      paddingHorizontal: 20,
+      paddingTop: 60,
+      paddingBottom: 80,
+    },
+    loadingOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "rgba(255, 255, 255, 0.85)",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 1000,
+    },
+    loadingOverlayText: {
+      marginTop: 12,
+      fontSize: 16,
+      fontWeight: "700",
+      color: theme.textPrimary,
+    },
 
-  mainShareButton: {
-    flexDirection: "row-reverse",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#4A90E2",
-    paddingVertical: 16,
-    borderRadius: 16,
-    marginBottom: 20,
-    shadowColor: "#4A90E2",
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  mainShareButtonText: {
-    marginRight: 10,
-    color: "#FFFFFF",
-    fontWeight: "700",
-    fontSize: 18,
-  },
+    mainShareButton: {
+      flexDirection: "row-reverse",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 16,
+      borderRadius: 16,
+      marginBottom: 20,
+      shadowOpacity: 0.3,
+      shadowOffset: { width: 0, height: 4 },
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    mainShareButtonText: {
+      marginRight: 10,
+      fontWeight: "700",
+      fontSize: 18,
+    },
 
-  editPanel: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  editPanelHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  editPanelTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#2D3748",
-  },
-  closeMenuButton: {
-    padding: 4,
-  },
-  toggleRow: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  toggleLabel: {
-    fontSize: 15,
-    color: "#4A5568",
-    marginLeft: 12,
-  },
-  shareButton: {
-    flexDirection: "row-reverse",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#48BB78",
-    paddingVertical: 14,
-    borderRadius: 12,
-    marginTop: 10,
-  },
-  shareText: {
-    marginRight: 8,
-    color: "#FFFFFF",
-    fontWeight: "700",
-    fontSize: 16,
-  },
+    editPanel: {
+      backgroundColor: theme.cardBackground,
+      borderRadius: 16,
+      padding: 20,
+      marginBottom: 20,
+      shadowColor: "#000",
+      shadowOpacity: 0.04,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    editPanelHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 15,
+    },
+    editPanelTitle: {
+      fontSize: 16,
+      fontWeight: "700",
+      color: theme.textPrimary,
+    },
+    closeMenuButton: {
+      padding: 4,
+    },
+    toggleRow: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      alignItems: "center",
+      marginBottom: 12,
+    },
+    toggleLabel: {
+      fontSize: 15,
+      color: theme.textSecondary,
+      marginLeft: 12,
+    },
+    shareButton: {
+      flexDirection: "row-reverse",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 14,
+      borderRadius: 12,
+      marginTop: 10,
+    },
+    shareText: {
+      marginRight: 8,
+      fontWeight: "700",
+      fontSize: 16,
+    },
 
-  shareContainer: {
-    backgroundColor: "#FFF",
-    borderRadius: 24,
-    padding: 24,
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 4,
-  },
-  shareCardHeader: {
-    flexDirection: "row-reverse",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F7FAFC",
-    paddingBottom: 15,
-  },
-  shareCardTitle: { fontSize: 20, fontWeight: "800", color: "#2D3748" },
-  statsGrid: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 15,
-  },
-  statBox: {
-    backgroundColor: "#F7FAFC",
-    width: (width - 100) / 2,
-    padding: 16,
-    borderRadius: 18,
-    alignItems: "center",
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#2D3748",
-    marginTop: 5,
-  },
-  statLabel: { fontSize: 12, color: "#718096", marginTop: 2 },
-  miniChartContainer: {
-    backgroundColor: "#F0FFF4",
-    padding: 12,
-    borderRadius: 14,
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  trendInfo: { flexDirection: "row-reverse", alignItems: "center" },
-  trendLabel: { fontSize: 14, color: "#2F855A", marginLeft: 8 },
-  trendValue: { fontSize: 16, fontWeight: "700", color: "#48BB78" },
-  historyShareContainer: {
-    marginTop: 15,
-    borderTopWidth: 1,
-    borderTopColor: "#F7FAFC",
-    paddingTop: 15,
-  },
-  listHeaderShare: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#2D3748",
-    textAlign: "right",
-    marginBottom: 12,
-  },
-  emptyStateText: {
-    fontSize: 14,
-    color: "#A0AEC0",
-    textAlign: "center",
-    marginTop: 10,
-    marginBottom: 10,
-  },
-  simRowShare: {
-    backgroundColor: "#F7FAFC",
-    padding: 12,
-    borderRadius: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  simInfo: { alignItems: "flex-end" },
-  simScore: { fontSize: 15, fontWeight: "700", color: "#2D3748" },
-  simDate: { fontSize: 12, color: "#A0AEC0" },
-  simChangeContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#E6FFFA",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  simChangeText: {
-    color: "#38B2AC",
-    fontWeight: "700",
-    marginRight: 4,
-    fontSize: 13,
-  },
-
-  // סגנון לכפתור ה"הצג יותר"
-  showMoreButton: {
-    flexDirection: "row-reverse",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    marginTop: 5,
-  },
-  showMoreText: {
-    color: "#4A90E2",
-    fontSize: 14,
-    fontWeight: "600",
-    marginLeft: 6, // מרווח בין האייקון לטקסט
-  },
-});
+    shareContainer: {
+      backgroundColor: theme.cardBackground,
+      borderRadius: 24,
+      padding: 24,
+      marginBottom: 20,
+      shadowColor: "#000",
+      shadowOpacity: 0.08,
+      shadowRadius: 20,
+      elevation: 4,
+    },
+    shareCardHeader: {
+      flexDirection: "row-reverse",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 20,
+      borderBottomWidth: 1,
+      borderBottomColor: "#F7FAFC",
+      paddingBottom: 15,
+    },
+    shareCardTitle: {
+      fontSize: 20,
+      fontWeight: "800",
+      color: theme.textPrimary,
+    },
+    statsGrid: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 15,
+    },
+    statBox: {
+      backgroundColor: "#F7FAFC",
+      width: (width - 100) / 2,
+      padding: 16,
+      borderRadius: 18,
+      alignItems: "center",
+    },
+    statValue: {
+      fontSize: 20,
+      fontWeight: "800",
+      color: theme.textPrimary,
+      marginTop: 5,
+    },
+    statLabel: { fontSize: 12, color: theme.textSecondary, marginTop: 2 },
+    miniChartContainer: {
+      backgroundColor: theme.successBackground,
+      padding: 12,
+      borderRadius: 14,
+      alignItems: "center",
+      marginBottom: 10,
+    },
+    trendInfo: { flexDirection: "row-reverse", alignItems: "center" },
+    trendLabel: { fontSize: 14, color: theme.successText, marginLeft: 8 },
+    trendValue: { fontSize: 16, fontWeight: "700", color: theme.successBorder },
+    historyShareContainer: {
+      marginTop: 15,
+      borderTopWidth: 1,
+      borderTopColor: "#F7FAFC",
+      paddingTop: 15,
+    },
+    listHeaderShare: {
+      fontSize: 16,
+      fontWeight: "700",
+      color: theme.textPrimary,
+      textAlign: "right",
+      marginBottom: 12,
+    },
+    emptyStateText: {
+      fontSize: 14,
+      color: theme.textSecondary,
+      textAlign: "center",
+      marginTop: 10,
+      marginBottom: 10,
+    },
+    simRowShare: {
+      backgroundColor: "#F7FAFC",
+      padding: 12,
+      borderRadius: 12,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 8,
+    },
+    simInfo: { alignItems: "flex-end" },
+    simScore: { fontSize: 15, fontWeight: "700", color: theme.textPrimary },
+    simDate: { fontSize: 12, color: theme.textSecondary },
+    simChangeContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: theme.successBackground,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 12,
+    },
+    simChangeText: {
+      color: theme.successText,
+      fontWeight: "700",
+      marginRight: 4,
+      fontSize: 13,
+    },
+    showMoreButton: {
+      flexDirection: "row-reverse",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 12,
+      marginTop: 5,
+    },
+    showMoreText: {
+      fontSize: 14,
+      fontWeight: "600",
+      marginLeft: 6,
+    },
+  });

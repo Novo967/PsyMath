@@ -1,11 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { useNavigation } from "@react-navigation/native";
-import * as AppleAuthentication from "expo-apple-authentication"; // <-- הוספנו את ספריית אפל
+import * as AppleAuthentication from "expo-apple-authentication";
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
-  OAuthProvider, // <-- הוספנו עבור אפל
+  OAuthProvider,
   sendEmailVerification,
   signInWithCredential,
   signOut,
@@ -28,9 +28,13 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { useTheme } from "../contexts/ThemeContexts";
 import { auth, db } from "../firebaseConfig";
 
 export default function SignUpScreen() {
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
+
   const navigation = useNavigation();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -38,7 +42,7 @@ export default function SignUpScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [isAppleLoading, setIsAppleLoading] = useState(false); // <-- סטייט לטעינה של אפל
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -51,6 +55,7 @@ export default function SignUpScreen() {
     });
   }, []);
 
+  // --- עדכון פונקציית יצירת המשתמש עם שיוך למכון ---
   const createUserDocument = async (user: any, fallbackName?: string) => {
     const userRef = doc(db, "users", user.uid);
     const docSnap = await getDoc(userRef);
@@ -59,6 +64,7 @@ export default function SignUpScreen() {
       await setDoc(userRef, {
         email: user.email,
         name: user.displayName || fallbackName || "",
+        instituteId: "default_institute", // <-- שיוך אוטומטי למכון ברירת המחדל
         isPremium: false,
         questionsSolvedToday: 0,
         dailyLimit: 10,
@@ -90,16 +96,13 @@ export default function SignUpScreen() {
       );
       userCreated = true;
 
-      await updateProfile(userCredential.user, {
-        displayName: name,
-      });
-
+      await updateProfile(userCredential.user, { displayName: name });
       await sendEmailVerification(userCredential.user);
       await createUserDocument(userCredential.user, name);
 
       Alert.alert(
         "החשבון נוצר בהצלחה!",
-        "שלחנו לך קישור לאימות לכתובת האימייל שהזנת. אנא אמת את החשבון כדי להמשיך.\n\nשים לב: אם אינך רואה את המייל, אנא בדוק בתיקיית דואר הזבל (Spam / Junk).",
+        "שלחנו לך קישור לאימות לכתובת האימייל. אנא אמת את החשבון כדי להמשיך.",
         [
           {
             text: "הבנתי",
@@ -108,21 +111,12 @@ export default function SignUpScreen() {
         ],
       );
     } catch (error: any) {
-      if (error.code === "auth/email-already-in-use") {
-        Alert.alert(
-          "שגיאה",
-          "המייל הזה כבר רשום במערכת. לחץ על הקישור למטה כדי להתחבר.",
-        );
-      } else {
-        Alert.alert("שגיאת הרשמה", error.message);
-      }
+      Alert.alert("שגיאה", error.message);
     } finally {
       if (userCreated) {
         try {
           await signOut(auth);
-        } catch (signOutError) {
-          console.log("Error signing out:", signOutError);
-        }
+        } catch (e) {}
       }
       setIsLoading(false);
     }
@@ -134,22 +128,17 @@ export default function SignUpScreen() {
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
       const idToken = userInfo.data?.idToken;
-
       if (!idToken) throw new Error("No ID token found");
-
       const googleCredential = GoogleAuthProvider.credential(idToken);
       const userCredential = await signInWithCredential(auth, googleCredential);
-
       await createUserDocument(userCredential.user);
     } catch (error: any) {
-      console.error("Google Sign-In Error:", error);
       Alert.alert("שגיאה", "לא הצלחנו להתחבר דרך גוגל.");
     } finally {
       setIsGoogleLoading(false);
     }
   };
 
-  // --- לוגיקת ההתחברות של אפל ---
   const handleAppleSignIn = async () => {
     setIsAppleLoading(true);
     try {
@@ -159,32 +148,20 @@ export default function SignUpScreen() {
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
       });
-
-      if (!credential.identityToken) {
-        throw new Error("No identity token provided by Apple");
-      }
-
+      if (!credential.identityToken) throw new Error("No identity token");
       const provider = new OAuthProvider("apple.com");
       const authCredential = provider.credential({
         idToken: credential.identityToken,
       });
-
       const userCredential = await signInWithCredential(auth, authCredential);
-
-      // חילוץ שם המשתמש (אפל שולחת את זה רק בהתחברות הראשונה אי פעם!)
       let fallbackName = "";
       if (credential.fullName) {
-        const givenName = credential.fullName.givenName || "";
-        const familyName = credential.fullName.familyName || "";
-        fallbackName = `${givenName} ${familyName}`.trim();
+        fallbackName =
+          `${credential.fullName.givenName || ""} ${credential.fullName.familyName || ""}`.trim();
       }
-
       await createUserDocument(userCredential.user, fallbackName);
     } catch (error: any) {
-      if (error.code === "ERR_REQUEST_CANCELED") {
-        console.log("Apple sign-in was canceled by the user");
-      } else {
-        console.error("Apple Sign-In Error:", error);
+      if (error.code !== "ERR_REQUEST_CANCELED") {
         Alert.alert("שגיאה", "לא הצלחנו להתחבר דרך אפל.");
       }
     } finally {
@@ -210,14 +187,16 @@ export default function SignUpScreen() {
             </View>
 
             <View style={styles.form}>
-              {/* --- כפתור התחברות עם אפל (יוצג רק ב-iOS) --- */}
               {Platform.OS === "ios" && (
                 <View style={styles.appleButtonWrapper}>
                   {isAppleLoading ? (
                     <View
-                      style={[styles.googleButton, { borderColor: "#000" }]}
+                      style={[
+                        styles.googleButton,
+                        { borderColor: theme.textPrimary },
+                      ]}
                     >
-                      <ActivityIndicator color="#000" />
+                      <ActivityIndicator color={theme.textPrimary} />
                     </View>
                   ) : (
                     <AppleAuthentication.AppleAuthenticationButton
@@ -242,7 +221,7 @@ export default function SignUpScreen() {
                 disabled={isGoogleLoading || isAppleLoading}
               >
                 {isGoogleLoading ? (
-                  <ActivityIndicator color="#333" />
+                  <ActivityIndicator color={theme.textPrimary} />
                 ) : (
                   <>
                     <Ionicons name="logo-google" size={20} color="#4181ef" />
@@ -257,12 +236,11 @@ export default function SignUpScreen() {
                 <View style={styles.divider} />
               </View>
 
-              {/* --- שדה השם הפרטי --- */}
               <View style={styles.inputContainer}>
                 <Ionicons
                   name="person-outline"
                   size={20}
-                  color="#718096"
+                  color={theme.textSecondary}
                   style={styles.icon}
                 />
                 <TextInput
@@ -271,6 +249,7 @@ export default function SignUpScreen() {
                   value={name}
                   onChangeText={setName}
                   textAlign="right"
+                  placeholderTextColor={theme.textSecondary + "80"}
                 />
               </View>
 
@@ -278,7 +257,7 @@ export default function SignUpScreen() {
                 <Ionicons
                   name="mail-outline"
                   size={20}
-                  color="#718096"
+                  color={theme.textSecondary}
                   style={styles.icon}
                 />
                 <TextInput
@@ -289,6 +268,7 @@ export default function SignUpScreen() {
                   value={email}
                   onChangeText={setEmail}
                   textAlign="right"
+                  placeholderTextColor={theme.textSecondary + "80"}
                 />
               </View>
 
@@ -296,7 +276,7 @@ export default function SignUpScreen() {
                 <Ionicons
                   name="lock-closed-outline"
                   size={20}
-                  color="#718096"
+                  color={theme.textSecondary}
                   style={styles.icon}
                 />
                 <TextInput
@@ -306,6 +286,7 @@ export default function SignUpScreen() {
                   value={password}
                   onChangeText={setPassword}
                   textAlign="right"
+                  placeholderTextColor={theme.textSecondary + "80"}
                 />
                 <TouchableOpacity
                   style={styles.eyeIconContainer}
@@ -314,7 +295,7 @@ export default function SignUpScreen() {
                   <Ionicons
                     name={showPassword ? "eye-outline" : "eye-off-outline"}
                     size={20}
-                    color="#718096"
+                    color={theme.textSecondary}
                   />
                 </TouchableOpacity>
               </View>
@@ -323,7 +304,7 @@ export default function SignUpScreen() {
                 <Ionicons
                   name="checkmark-circle-outline"
                   size={20}
-                  color="#718096"
+                  color={theme.textSecondary}
                   style={styles.icon}
                 />
                 <TextInput
@@ -333,6 +314,7 @@ export default function SignUpScreen() {
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   textAlign="right"
+                  placeholderTextColor={theme.textSecondary + "80"}
                 />
                 <TouchableOpacity
                   style={styles.eyeIconContainer}
@@ -343,7 +325,7 @@ export default function SignUpScreen() {
                       showConfirmPassword ? "eye-outline" : "eye-off-outline"
                     }
                     size={20}
-                    color="#718096"
+                    color={theme.textSecondary}
                   />
                 </TouchableOpacity>
               </View>
@@ -354,7 +336,7 @@ export default function SignUpScreen() {
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <ActivityIndicator color="#FFF" />
+                  <ActivityIndicator color={theme.textLight} />
                 ) : (
                   <Text style={styles.submitButtonText}>הרשמה עם אימייל</Text>
                 )}
@@ -376,85 +358,89 @@ export default function SignUpScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#F8F9FA" },
-  keyboardAvoidingView: { flex: 1 },
-  scrollContainer: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-    justifyContent: "center",
-    paddingBottom: 40,
-  },
-  header: { alignItems: "center", marginBottom: 40 },
-  title: { fontSize: 28, fontWeight: "800", color: "#2D3748", marginBottom: 8 },
-  subtitle: { fontSize: 16, color: "#718096" },
-  form: { gap: 16 },
-  appleButtonWrapper: {
-    width: "100%",
-    height: 56,
-  },
-  appleButton: {
-    width: "100%",
-    height: "100%",
-  },
-  googleButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#FFF",
-    height: 56,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    gap: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  googleButtonText: { fontSize: 16, fontWeight: "600", color: "#2D3748" },
-  dividerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 10,
-  },
-  divider: { flex: 1, height: 1, backgroundColor: "#E2E8F0" },
-  dividerText: { marginHorizontal: 15, color: "#A0AEC0", fontSize: 14 },
-  inputContainer: {
-    flexDirection: "row-reverse",
-    alignItems: "center",
-    backgroundColor: "#FFF",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 56,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  icon: { marginLeft: 12 },
-  input: { flex: 1, fontSize: 16, color: "#2D3748" },
-  eyeIconContainer: { padding: 5 },
-  submitButton: {
-    backgroundColor: "#4A90E2",
-    height: 56,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 10,
-    shadowColor: "#4A90E2",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  submitButtonText: { color: "#FFF", fontSize: 18, fontWeight: "700" },
-  loginLinkContainer: {
-    marginTop: 15,
-    alignItems: "center",
-  },
-  loginLinkText: {
-    color: "#4A90E2",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});
+const getStyles = (theme: any) =>
+  StyleSheet.create({
+    safeArea: { flex: 1, backgroundColor: theme.cardBackground },
+    keyboardAvoidingView: { flex: 1 },
+    scrollContainer: {
+      flexGrow: 1,
+      paddingHorizontal: 24,
+      justifyContent: "center",
+      paddingBottom: 40,
+    },
+    header: { alignItems: "center", marginBottom: 40 },
+    title: {
+      fontSize: 28,
+      fontWeight: "800",
+      color: theme.textPrimary,
+      marginBottom: 8,
+    },
+    subtitle: { fontSize: 16, color: theme.textSecondary },
+    form: { gap: 16 },
+    appleButtonWrapper: { width: "100%", height: 56 },
+    appleButton: { width: "100%", height: "100%" },
+    googleButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.cardBackground,
+      height: 56,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: "#E2E8F0",
+      gap: 10,
+    },
+    googleButtonText: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: theme.textPrimary,
+    },
+    dividerContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginVertical: 10,
+    },
+    divider: { flex: 1, height: 1, backgroundColor: "#E2E8F0" },
+    dividerText: {
+      marginHorizontal: 15,
+      color: theme.textSecondary,
+      fontSize: 14,
+    },
+    inputContainer: {
+      flexDirection: "row-reverse",
+      alignItems: "center",
+      backgroundColor: theme.cardBackground,
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      height: 56,
+      borderWidth: 1,
+      borderColor: "#E2E8F0",
+    },
+    icon: { marginLeft: 12 },
+    input: { flex: 1, fontSize: 16, color: theme.textPrimary },
+    eyeIconContainer: { padding: 5 },
+    submitButton: {
+      backgroundColor: theme.primaryColor,
+      height: 56,
+      borderRadius: 12,
+      justifyContent: "center",
+      alignItems: "center",
+      marginTop: 10,
+      shadowColor: theme.primaryColor,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    submitButtonText: {
+      color: theme.textLight,
+      fontSize: 18,
+      fontWeight: "700",
+    },
+    loginLinkContainer: { marginTop: 15, alignItems: "center" },
+    loginLinkText: {
+      color: theme.primaryColor,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+  });

@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import * as Application from "expo-application"; // <-- ייבוא חדש לזיהוי גרסה
+import * as Application from "expo-application";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore"; // <-- ייבוא לשליפת הגדרות מפיירבייס
+import { doc, getDoc } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -22,7 +22,8 @@ import { auth, db } from "./firebaseConfig";
 import { AVPlaybackStatus, ResizeMode, Video } from "expo-av";
 import * as SplashScreen from "expo-splash-screen";
 
-// Import Screens
+// Theme & Screens
+import { ThemeProvider, useTheme } from "./contexts/ThemeContexts"; // תיקון הנתיב
 import ChapterScreen from "./screens/ChapterScreen";
 import HomeScreen from "./screens/HomeScreen";
 import LoginScreen from "./screens/LoginScreen";
@@ -33,7 +34,7 @@ import SimulationScreen from "./screens/SimulationScreen";
 import StatisticsScreen from "./screens/StatisticsScreen";
 import StudyMaterialsScreen from "./screens/StudyMaterialsScreen";
 
-// עצירת הספלאש הנייטיבי מלהיעלם אוטומטית
+// עצירת הספלאש הנייטיבי
 SplashScreen.preventAutoHideAsync();
 
 export type RootStackParamList = {
@@ -44,15 +45,14 @@ export type RootStackParamList = {
   Statistics: undefined;
   SignUp: undefined;
   Login: undefined;
-  SimulationResultsScreen: undefined;
-  ChapterScreen: undefined;
+  SimulationResultsScreen: any;
+  ChapterScreen: any;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 I18nManager.allowRTL(false);
 I18nManager.forceRTL(false);
 
-// פונקציית עזר לבדיקה אם הגרסה הנוכחית קטנה מהגרסה המינימלית
 const isVersionOlder = (currentVersion: string, minVersion: string) => {
   const v1 = currentVersion.split(".").map(Number);
   const v2 = minVersion.split(".").map(Number);
@@ -65,144 +65,16 @@ const isVersionOlder = (currentVersion: string, minVersion: string) => {
   return false;
 };
 
-export default function App() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
-  const [isVideoFinished, setIsVideoFinished] = useState(false);
+// --- קומפוננטת הניווט הפנימית (יכולה להשתמש ב-useTheme) ---
+function AppNavigator({ user }: { user: User | null }) {
+  const { theme } = useTheme();
 
-  // סטייטים חדשים למערכת החסימה
-  const [isUpdateRequired, setIsUpdateRequired] = useState(false);
-  const [storeUrls, setStoreUrls] = useState({ ios: "", android: "" });
-
-  // בדיקת גרסת אפליקציה מול פיירבייס
-  useEffect(() => {
-    const checkAppVersion = async () => {
-      try {
-        const docRef = doc(db, "appConfig", "versionControl");
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          const minVersion =
-            Platform.OS === "ios" ? data.minVersionIos : data.minVersionAndroid;
-          // שליפת הגרסה האמיתית של המכשיר (ברירת מחדל 1.0.0 אם לא נמצא)
-          const currentVersion =
-            Application.nativeApplicationVersion || "1.0.0";
-
-          if (minVersion && isVersionOlder(currentVersion, minVersion)) {
-            setIsUpdateRequired(true);
-            setStoreUrls({
-              ios: data.storeUrlIos || "",
-              android: data.storeUrlAndroid || "",
-            });
-          }
-        }
-      } catch (error) {
-        console.error("Error checking app version:", error);
-      }
-    };
-
-    checkAppVersion();
-  }, []);
-
-  // האזנה לסטטוס התחברות
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        const isEmailProvider = currentUser.providerData.some(
-          (provider) => provider.providerId === "password",
-        );
-
-        if (isEmailProvider && !currentUser.emailVerified) {
-          setUser(null);
-        } else {
-          setUser(currentUser);
-        }
-      } else {
-        setUser(null);
-      }
-      setIsLoading(false);
-    });
-
-    return unsubscribe;
-  }, []);
-
-  // ניהול מצב הנגן של הוידאו
-  const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
-    if (status.isLoaded) {
-      SplashScreen.hideAsync();
-
-      if (status.didJustFinish) {
-        setIsVideoFinished(true);
-      }
-    }
-  };
-
-  // 1. תצוגת הספלאש וידאו (מוצג כל עוד הוידאו לא הסתיים)
-  if (!isVideoFinished) {
-    return (
-      <View style={styles.splashContainer}>
-        <Video
-          style={{ width: 250, height: 250 }}
-          source={require("./assets/splashscreen.mp4")}
-          resizeMode={ResizeMode.CONTAIN}
-          shouldPlay={true}
-          isLooping={false}
-          onPlaybackStatusUpdate={onPlaybackStatusUpdate}
-        />
-      </View>
-    );
-  }
-
-  // 2. תצוגת חסימת מסך - מוצגת אם נדרש עדכון גרסה!
-  if (isUpdateRequired) {
-    return (
-      <View style={styles.updateContainer}>
-        <Ionicons
-          name="cloud-download-outline"
-          size={80}
-          color="#4A90E2"
-          style={{ marginBottom: 20 }}
-        />
-        <Text style={styles.updateTitle}>עדכון חשוב זמין!</Text>
-        <Text style={styles.updateSubtitle}>
-          כדי להמשיך להשתמש באפליקציה ולקבל את העדכונים החדשים ביותר, חובה לעדכן
-          לגרסה החדשה.
-        </Text>
-        <TouchableOpacity
-          style={styles.updateButton}
-          onPress={() => {
-            const url =
-              Platform.OS === "ios" ? storeUrls.ios : storeUrls.android;
-            if (url) {
-              Linking.openURL(url);
-            } else {
-              Alert.alert("שגיאה", "קישור לחנות עדיין לא זמין.");
-            }
-          }}
-        >
-          <Text style={styles.updateButtonText}>עדכן עכשיו</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  // 3. תצוגת טעינה של Firebase
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#4A90E2" />
-      </View>
-    );
-  }
-
-  // 4. תצוגת האפליקציה הרגילה
   return (
     <NavigationContainer>
       <Stack.Navigator
         screenOptions={({ navigation }) => ({
           headerShown: Platform.OS === "ios",
-          headerStyle: { backgroundColor: "#9dbde9" },
+          headerStyle: { backgroundColor: theme.backgroundColor }, // צבע הדר דינמי!
           headerShadowVisible: false,
           headerTitle: "",
           headerBackVisible: false,
@@ -213,26 +85,15 @@ export default function App() {
                 <TouchableOpacity
                   onPress={() => navigation.goBack()}
                   activeOpacity={0.0}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    backgroundColor: "transparent",
-                  }}
+                  style={{ flexDirection: "row", alignItems: "center" }}
                 >
-                  <Text
-                    style={{
-                      color: "#007AFF",
-                      fontSize: 17,
-                      fontWeight: "400",
-                    }}
-                  >
+                  <Text style={{ color: theme.textLight, fontSize: 17 }}>
                     חזור
                   </Text>
                   <Ionicons
                     name="chevron-forward"
                     size={24}
-                    color="#007AFF"
-                    style={{ marginLeft: 0 }}
+                    color={theme.textLight}
                   />
                 </TouchableOpacity>
               );
@@ -255,7 +116,6 @@ export default function App() {
             <Stack.Screen
               name="SimulationResultsScreen"
               component={SimulationResultsScreen}
-              options={{ title: "תוצאות המבחן" }}
             />
           </>
         ) : (
@@ -277,6 +137,142 @@ export default function App() {
   );
 }
 
+// --- קומפוננטת הניהול המרכזית (לוגיקה ואותנטיקציה) ---
+function AppContent() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [isVideoFinished, setIsVideoFinished] = useState(false);
+  const [isUpdateRequired, setIsUpdateRequired] = useState(false);
+  const [storeUrls, setStoreUrls] = useState({ ios: "", android: "" });
+
+  const { setTheme } = useTheme();
+
+  // בדיקת גרסה
+  useEffect(() => {
+    const checkAppVersion = async () => {
+      try {
+        const docRef = doc(db, "appConfig", "versionControl");
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const minVersion =
+            Platform.OS === "ios" ? data.minVersionIos : data.minVersionAndroid;
+          const currentVersion =
+            Application.nativeApplicationVersion || "1.0.0";
+          if (minVersion && isVersionOlder(currentVersion, minVersion)) {
+            setIsUpdateRequired(true);
+            setStoreUrls({
+              ios: data.storeUrlIos || "",
+              android: data.storeUrlAndroid || "",
+            });
+          }
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    checkAppVersion();
+  }, []);
+
+  // ניהול התחברות וטעינת Theme מה-Firestore
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (
+        currentUser &&
+        (currentUser.providerData.some((p) => p.providerId !== "password") ||
+          currentUser.emailVerified)
+      ) {
+        setUser(currentUser);
+
+        // משיכת ה-Theme הממותג של המכון
+        try {
+          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+          if (userDoc.exists()) {
+            const instId = userDoc.data().instituteId || "default_institute";
+            const instDoc = await getDoc(doc(db, "institutes", instId));
+            if (instDoc.exists() && instDoc.data().theme) {
+              setTheme(instDoc.data().theme); // הפעלת ה-Theme הדינמי!
+            }
+          }
+        } catch (e) {
+          console.log("Theme load error:", e);
+        }
+      } else {
+        setUser(null);
+      }
+      setIsLoading(false);
+    });
+    return unsubscribe;
+  }, []);
+
+  const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
+    if (status.isLoaded) {
+      SplashScreen.hideAsync();
+      if (status.didJustFinish) setIsVideoFinished(true);
+    }
+  };
+
+  if (!isVideoFinished) {
+    return (
+      <View style={styles.splashContainer}>
+        <Video
+          style={{ width: 250, height: 250 }}
+          source={require("./assets/splashscreen.mp4")}
+          resizeMode={ResizeMode.CONTAIN}
+          shouldPlay={true}
+          onPlaybackStatusUpdate={onPlaybackStatusUpdate}
+        />
+      </View>
+    );
+  }
+
+  if (isUpdateRequired) {
+    return (
+      <View style={styles.updateContainer}>
+        <Ionicons
+          name="cloud-download-outline"
+          size={80}
+          color="#4A90E2"
+          style={{ marginBottom: 20 }}
+        />
+        <Text style={styles.updateTitle}>עדכון חשוב זמין!</Text>
+        <Text style={styles.updateSubtitle}>
+          כדי להמשיך, חובה לעדכן לגרסה החדשה.
+        </Text>
+        <TouchableOpacity
+          style={styles.updateButton}
+          onPress={() => {
+            const url =
+              Platform.OS === "ios" ? storeUrls.ios : storeUrls.android;
+            url ? Linking.openURL(url) : Alert.alert("שגיאה", "קישור לא זמין.");
+          }}
+        >
+          <Text style={styles.updateButtonText}>עדכן עכשיו</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#4A90E2" />
+      </View>
+    );
+  }
+
+  return <AppNavigator user={user} />;
+}
+
+// --- הקומפוננטה הראשית שעוטפת הכל ב-ThemeProvider ---
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
+}
+
 const styles = StyleSheet.create({
   splashContainer: {
     flex: 1,
@@ -284,7 +280,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  // עיצוב למסך העדכון החוסם
   updateContainer: {
     flex: 1,
     justifyContent: "center",
@@ -297,14 +292,12 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#2D3748",
     marginBottom: 12,
-    textAlign: "center",
   },
   updateSubtitle: {
     fontSize: 16,
     color: "#718096",
     textAlign: "center",
     marginBottom: 32,
-    lineHeight: 24,
   },
   updateButton: {
     backgroundColor: "#4A90E2",
@@ -313,15 +306,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     width: "100%",
     alignItems: "center",
-    shadowColor: "#4A90E2",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
-  updateButtonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
+  updateButtonText: { color: "white", fontSize: 18, fontWeight: "bold" },
 });

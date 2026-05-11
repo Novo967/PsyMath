@@ -5,7 +5,6 @@ import {
   GoogleAuthProvider,
   signInWithCredential,
   signInWithEmailAndPassword,
-  signOut,
 } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
@@ -24,10 +23,14 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { useTheme } from "../contexts/ThemeContexts";
 import { auth, db } from "../firebaseConfig";
 
 export default function LoginScreen() {
   const navigation = useNavigation<any>();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -41,13 +44,17 @@ export default function LoginScreen() {
     });
   }, []);
 
+  // פונקציה לוודא שלמשתמש יש מסמך ב-Firestore עם שיוך למכון
   const checkUserDocument = async (user: any) => {
     const userRef = doc(db, "users", user.uid);
     const docSnap = await getDoc(userRef);
+
     if (!docSnap.exists()) {
+      // יצירת מסמך חדש למשתמש (נפוץ בכניסה ראשונה דרך גוגל)
       await setDoc(userRef, {
         email: user.email,
         name: user.displayName || "",
+        instituteId: "default_institute", // שיוך למכון ברירת מחדל
         isPremium: false,
         questionsSolvedToday: 0,
         dailyLimit: 10,
@@ -57,41 +64,30 @@ export default function LoginScreen() {
     }
   };
 
-  const handleEmailLogin = async () => {
+  const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert("שגיאה", "אנא מלא אימייל וסיסמה");
+      Alert.alert("שגיאה", "אנא מלא את כל השדות");
       return;
     }
 
     setIsLoading(true);
-
     try {
       const userCredential = await signInWithEmailAndPassword(
         auth,
         email,
         password,
       );
-      const user = userCredential.user;
-
-      if (!user.emailVerified) {
-        await signOut(auth);
-        Alert.alert(
-          "המייל טרם אומת",
-          "אנא אמת את כתובת המייל שלך לפני ההתחברות. אם אינך רואה את המייל, בדוק בתיקיית דואר הזבל (Spam/Junk).",
-        );
-        setIsLoading(false);
-        return;
-      }
+      await checkUserDocument(userCredential.user);
+      // הניווט יתבצע אוטומטית דרך onAuthStateChanged ב-App.tsx
     } catch (error: any) {
+      let errorMessage = "חלה שגיאה בהתחברות";
       if (
-        error.code === "auth/invalid-credential" ||
         error.code === "auth/user-not-found" ||
         error.code === "auth/wrong-password"
       ) {
-        Alert.alert("שגיאה", "אימייל או סיסמה לא נכונים");
-      } else {
-        Alert.alert("שגיאה", "לא הצלחנו להתחבר, נסה שוב מאוחר יותר");
+        errorMessage = "אימייל או סיסמה שגויים";
       }
+      Alert.alert("שגיאה", errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -109,7 +105,7 @@ export default function LoginScreen() {
       const userCredential = await signInWithCredential(auth, googleCredential);
       await checkUserDocument(userCredential.user);
     } catch (error: any) {
-      Alert.alert("שגיאה", "לא הצלחנו להתחבר דרך גוגל.");
+      Alert.alert("שגיאה", "התחברות עם גוגל נכשלה");
     } finally {
       setIsGoogleLoading(false);
     }
@@ -119,103 +115,101 @@ export default function LoginScreen() {
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardAvoidingView}
+        style={{ flex: 1 }}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <ScrollView
-            contentContainerStyle={styles.scrollContainer}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
+          <ScrollView contentContainerStyle={styles.scrollContainer}>
             <View style={styles.header}>
-              <Text style={styles.title}>שלום שוב!</Text>
-              <Text style={styles.subtitle}>התחבר כדי להמשיך ללמוד לכמותי</Text>
+              <Text style={styles.title}>התחברות</Text>
+              <Text style={styles.subtitle}>טוב לראות אותך שוב!</Text>
             </View>
 
             <View style={styles.form}>
+              <View style={styles.inputContainer}>
+                <Ionicons
+                  name="mail-outline"
+                  size={20}
+                  color={theme.textSecondary}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="אימייל"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  textAlign="right"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  <Ionicons
+                    name={showPassword ? "eye-outline" : "eye-off-outline"}
+                    size={20}
+                    color={theme.textSecondary}
+                  />
+                </TouchableOpacity>
+                <TextInput
+                  style={styles.input}
+                  placeholder="סיסמה"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  textAlign="right"
+                />
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color={theme.textSecondary}
+                />
+              </View>
+
+              <TouchableOpacity
+                style={styles.loginButton}
+                onPress={handleLogin}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color={theme.textLight} />
+                ) : (
+                  <Text style={styles.loginButtonText}>התחבר</Text>
+                )}
+              </TouchableOpacity>
+
+              <View style={styles.dividerContainer}>
+                <View style={styles.divider} />
+                <Text style={styles.dividerText}>או התחבר עם</Text>
+                <View style={styles.divider} />
+              </View>
+
               <TouchableOpacity
                 style={styles.googleButton}
                 onPress={handleGoogleSignIn}
                 disabled={isGoogleLoading}
               >
                 {isGoogleLoading ? (
-                  <ActivityIndicator color="#333" />
+                  <ActivityIndicator color={theme.textPrimary} />
                 ) : (
                   <>
                     <Ionicons name="logo-google" size={20} color="#4181ef" />
-                    <Text style={styles.googleButtonText}>המשך עם Google</Text>
+                    <Text style={styles.googleButtonText}>Google</Text>
                   </>
                 )}
               </TouchableOpacity>
 
-              <View style={styles.dividerContainer}>
-                <View style={styles.divider} />
-                <Text style={styles.dividerText}>או</Text>
-                <View style={styles.divider} />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Ionicons
-                  name="mail-outline"
-                  size={20}
-                  color="#718096"
-                  style={styles.icon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="אימייל"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  value={email}
-                  onChangeText={setEmail}
-                  textAlign="right"
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Ionicons
-                  name="lock-closed-outline"
-                  size={20}
-                  color="#718096"
-                  style={styles.icon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="סיסמה"
-                  secureTextEntry={!showPassword}
-                  value={password}
-                  onChangeText={setPassword}
-                  textAlign="right"
-                />
-                <TouchableOpacity
-                  style={styles.eyeIconContainer}
-                  onPress={() => setShowPassword(!showPassword)}
-                >
-                  <Ionicons
-                    name={showPassword ? "eye-outline" : "eye-off-outline"}
-                    size={20}
-                    color="#718096"
-                  />
-                </TouchableOpacity>
-              </View>
-
               <TouchableOpacity
-                style={styles.submitButton}
-                onPress={handleEmailLogin}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#FFF" />
-                ) : (
-                  <Text style={styles.submitButtonText}>התחברות</Text>
-                )}
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.linkContainer}
+                style={styles.signUpLink}
                 onPress={() => navigation.navigate("SignUp")}
               >
-                <Text style={styles.linkText}>אין לך חשבון? הרשם עכשיו</Text>
+                <Text style={{ color: theme.textSecondary }}>
+                  עדיין אין לך חשבון?{" "}
+                </Text>
+                <Text style={{ color: theme.primaryColor, fontWeight: "bold" }}>
+                  הירשם כאן
+                </Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -225,61 +219,82 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#F8F9FA" },
-  keyboardAvoidingView: { flex: 1 },
-  scrollContainer: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-    justifyContent: "center",
-  },
-  header: { alignItems: "center", marginBottom: 40 },
-  title: { fontSize: 28, fontWeight: "800", color: "#2D3748", marginBottom: 8 },
-  subtitle: { fontSize: 16, color: "#718096" },
-  form: { gap: 16 },
-  googleButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#FFF",
-    height: 56,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    gap: 10,
-    elevation: 2,
-  },
-  googleButtonText: { fontSize: 16, fontWeight: "600", color: "#2D3748" },
-  dividerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 10,
-  },
-  divider: { flex: 1, height: 1, backgroundColor: "#E2E8F0" },
-  dividerText: { marginHorizontal: 15, color: "#A0AEC0", fontSize: 14 },
-  inputContainer: {
-    flexDirection: "row-reverse",
-    alignItems: "center",
-    backgroundColor: "#FFF",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 56,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  icon: { marginLeft: 12 },
-  input: { flex: 1, fontSize: 16, color: "#2D3748" },
-  eyeIconContainer: { padding: 5 },
-  submitButton: {
-    backgroundColor: "#4A90E2",
-    height: 56,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 10,
-    elevation: 4,
-  },
-  submitButtonText: { color: "#FFF", fontSize: 18, fontWeight: "700" },
-  linkContainer: { marginTop: 15, alignItems: "center" },
-  linkText: { color: "#4A90E2", fontSize: 16, fontWeight: "600" },
-});
+const getStyles = (theme: any) =>
+  StyleSheet.create({
+    safeArea: { flex: 1, backgroundColor: theme.cardBackground },
+    scrollContainer: { flexGrow: 1, padding: 24, justifyContent: "center" },
+    header: { alignItems: "center", marginBottom: 40 },
+    title: {
+      fontSize: 32,
+      fontWeight: "800",
+      color: theme.textPrimary,
+      marginBottom: 8,
+    },
+    subtitle: { fontSize: 18, color: theme.textSecondary },
+    form: { gap: 20 },
+    inputContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: theme.cardBackground,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: "#E2E8F0",
+      paddingHorizontal: 16,
+      height: 60,
+    },
+    input: {
+      flex: 1,
+      paddingHorizontal: 12,
+      fontSize: 16,
+      color: theme.textPrimary,
+      textAlign: "right",
+    },
+    loginButton: {
+      backgroundColor: theme.primaryColor,
+      height: 60,
+      borderRadius: 12,
+      justifyContent: "center",
+      alignItems: "center",
+      shadowColor: theme.primaryColor,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 3,
+    },
+    loginButtonText: {
+      color: theme.textLight,
+      fontSize: 18,
+      fontWeight: "700",
+    },
+    dividerContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginVertical: 10,
+    },
+    divider: { flex: 1, height: 1, backgroundColor: "#E2E8F0" },
+    dividerText: {
+      marginHorizontal: 10,
+      color: theme.textSecondary,
+      fontSize: 14,
+    },
+    googleButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      height: 60,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: "#E2E8F0",
+      gap: 12,
+    },
+    googleButtonText: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: theme.textPrimary,
+    },
+    signUpLink: {
+      flexDirection: "row",
+      justifyContent: "center",
+      marginTop: 10,
+    },
+  });
