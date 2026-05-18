@@ -25,6 +25,7 @@ import {
 } from "react-native";
 import { useTheme } from "../contexts/ThemeContexts";
 import { auth, db } from "../firebaseConfig";
+import { UserRole } from "../types";
 
 export default function LoginScreen() {
   const navigation = useNavigation<any>();
@@ -44,7 +45,6 @@ export default function LoginScreen() {
     });
   }, []);
 
-  // פונקציה לוודא שלמשתמש יש מסמך ב-Firestore עם שיוך למכון
   const checkUserDocument = async (user: any) => {
     const userRef = doc(db, "users", user.uid);
     const docSnap = await getDoc(userRef);
@@ -54,15 +54,25 @@ export default function LoginScreen() {
       await setDoc(userRef, {
         email: user.email,
         name: user.displayName || "",
-        instituteId: "default_institute", // שיוך למכון ברירת מחדל
+        role: "student" as UserRole,
+        instituteId: "B2C_PUBLIC",
         isPremium: false,
         questionsSolvedToday: 0,
         dailyLimit: 10,
         lastQuestionDate: new Date().toISOString(),
+        totalQuestionsPracticed: 0,
+        totalCorrectAnswers: 0,
+        practicedQuestions: [],
+        subjectStats: {
+          quantitative: { totalPracticed: 0, totalCorrect: 0 },
+          verbal: { totalPracticed: 0, totalCorrect: 0 },
+          english: { totalPracticed: 0, totalCorrect: 0 },
+        },
         createdAt: new Date().toISOString(),
       });
     }
   };
+
 
   const handleLogin = async () => {
     if (!email || !password) {

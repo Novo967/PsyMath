@@ -30,6 +30,7 @@ import {
 } from "react-native";
 import { useTheme } from "../contexts/ThemeContexts";
 import { auth, db } from "../firebaseConfig";
+import { UserRole } from "../types";
 
 export default function SignUpScreen() {
   const { theme } = useTheme();
@@ -64,15 +65,25 @@ export default function SignUpScreen() {
       await setDoc(userRef, {
         email: user.email,
         name: user.displayName || fallbackName || "",
-        instituteId: "default_institute", // <-- שיוך אוטומטי למכון ברירת המחדל
+        role: "student" as UserRole,
+        instituteId: "B2C_PUBLIC",
         isPremium: false,
         questionsSolvedToday: 0,
         dailyLimit: 10,
         lastQuestionDate: new Date().toISOString(),
+        totalQuestionsPracticed: 0,
+        totalCorrectAnswers: 0,
+        practicedQuestions: [],
+        subjectStats: {
+          quantitative: { totalPracticed: 0, totalCorrect: 0 },
+          verbal: { totalPracticed: 0, totalCorrect: 0 },
+          english: { totalPracticed: 0, totalCorrect: 0 },
+        },
         createdAt: new Date().toISOString(),
       });
     }
   };
+
 
   const handleEmailSignUp = async () => {
     if (!name || !email || !password || !confirmPassword) {

@@ -23,29 +23,13 @@ import {
   View,
 } from "react-native";
 import { captureRef } from "react-native-view-shot";
-import { useTheme } from "../contexts/ThemeContexts"; // ייבוא ה-Hook החדש
+import { useTheme } from "../contexts/ThemeContexts";
 import { auth, db } from "../firebaseConfig";
+import { Question, FormattedSimulation } from "../types";
 
 const { width } = Dimensions.get("window");
 
-interface Question {
-  id: string;
-  topic: string;
-  questionText: string;
-  options: string[];
-  correctAnswerIndex: number;
-  explanation: string;
-  difficulty: string;
-}
 
-interface SimulationResult {
-  id: string;
-  date: string;
-  score: number;
-  change: string;
-  changeNum: number;
-  rawResults: any[];
-}
 
 export default function StatisticsScreen() {
   const { theme } = useTheme(); // שליפת ערכת הנושא
@@ -60,7 +44,7 @@ export default function StatisticsScreen() {
   const [accuracyRate, setAccuracyRate] = useState(0);
   const [improvementTrend, setImprovementTrend] = useState("0%");
 
-  const [allSimulations, setAllSimulations] = useState<SimulationResult[]>([]);
+  const [allSimulations, setAllSimulations] = useState<FormattedSimulation[]>([]);
   const [showAllHistory, setShowAllHistory] = useState(false);
 
   const [showAccuracy, setShowAccuracy] = useState(true);
@@ -112,7 +96,7 @@ export default function StatisticsScreen() {
         fetchedSims.push({ id: doc.id, ...doc.data() });
       });
 
-      let formattedSims: SimulationResult[] = [];
+      let formattedSims: FormattedSimulation[] = [];
       let previousScore: number | null = null;
 
       for (let sim of fetchedSims) {
@@ -155,7 +139,7 @@ export default function StatisticsScreen() {
     }
   };
 
-  const handleSimulationPress = async (sim: SimulationResult) => {
+  const handleSimulationPress = async (sim: FormattedSimulation) => {
     if (!sim.rawResults || sim.rawResults.length === 0) {
       Alert.alert("שגיאה", "לא נמצאו נתונים מפורטים עבור סימולציה זו.");
       return;
@@ -164,7 +148,7 @@ export default function StatisticsScreen() {
     setIsFetchingDetails(true);
     try {
       const questionPromises = sim.rawResults.map(async (res) => {
-        const qRef = doc(db, "Questions", res.questionId);
+        const qRef = doc(db, "questions", res.questionId);
         const qSnap = await getDoc(qRef);
         if (qSnap.exists()) {
           return { id: qSnap.id, ...qSnap.data() } as Question;

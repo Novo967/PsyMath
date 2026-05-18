@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import * as Application from "expo-application";
-import { onAuthStateChanged, User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
@@ -16,14 +15,17 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { auth, db } from "./firebaseConfig";
+import { db } from "./firebaseConfig";
 
 // Video & Splash imports
 import { AVPlaybackStatus, ResizeMode, Video } from "expo-av";
 import * as SplashScreen from "expo-splash-screen";
 
-// Theme & Screens
+// Contexts
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContexts"; // תיקון הנתיב
+
+// Screens
 import ChapterScreen from "./screens/ChapterScreen";
 import HomeScreen from "./screens/HomeScreen";
 import LoginScreen from "./screens/LoginScreen";
@@ -34,19 +36,33 @@ import SimulationScreen from "./screens/SimulationScreen";
 import StatisticsScreen from "./screens/StatisticsScreen";
 import StudyMaterialsScreen from "./screens/StudyMaterialsScreen";
 
+// CMS Screens
+import CMSDashboardScreen from "./screens/cms/CMSDashboardScreen";
+import MaterialFormScreen from "./screens/cms/MaterialFormScreen";
+import MaterialListScreen from "./screens/cms/MaterialListScreen";
+import QuestionFormScreen from "./screens/cms/QuestionFormScreen";
+import QuestionListScreen from "./screens/cms/QuestionListScreen";
+import { Subject } from "./types";
+
 // עצירת הספלאש הנייטיבי
 SplashScreen.preventAutoHideAsync();
 
 export type RootStackParamList = {
   Home: undefined;
-  StudyMaterials: undefined;
-  Practice: undefined;
-  Simulation: undefined;
+  StudyMaterials: { subject: Subject };
+  Practice: { subject: Subject };
+  Simulation: { subject: Subject };
   Statistics: undefined;
   SignUp: undefined;
   Login: undefined;
   SimulationResultsScreen: any;
   ChapterScreen: any;
+  // CMS screens
+  CMSDashboard: undefined;
+  QuestionList: undefined;
+  QuestionForm: { questionId?: string };
+  MaterialList: undefined;
+  MaterialForm: { chapterId?: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -66,8 +82,9 @@ const isVersionOlder = (currentVersion: string, minVersion: string) => {
 };
 
 // --- קומפוננטת הניווט הפנימית (יכולה להשתמש ב-useTheme) ---
-function AppNavigator({ user }: { user: User | null }) {
+function AppNavigator() {
   const { theme } = useTheme();
+  const { isAuthenticated } = useAuth();
 
   return (
     <NavigationContainer>
@@ -102,7 +119,7 @@ function AppNavigator({ user }: { user: User | null }) {
           },
         })}
       >
-        {user ? (
+        {isAuthenticated ? (
           <>
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen
@@ -117,6 +134,12 @@ function AppNavigator({ user }: { user: User | null }) {
               name="SimulationResultsScreen"
               component={SimulationResultsScreen}
             />
+            {/* CMS Screens */}
+            <Stack.Screen name="CMSDashboard" component={CMSDashboardScreen} />
+            <Stack.Screen name="QuestionList" component={QuestionListScreen} />
+            <Stack.Screen name="QuestionForm" component={QuestionFormScreen} />
+            <Stack.Screen name="MaterialList" component={MaterialListScreen} />
+            <Stack.Screen name="MaterialForm" component={MaterialFormScreen} />
           </>
         ) : (
           <>
@@ -139,13 +162,11 @@ function AppNavigator({ user }: { user: User | null }) {
 
 // --- קומפוננטת הניהול המרכזית (לוגיקה ואותנטיקציה) ---
 function AppContent() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
   const [isVideoFinished, setIsVideoFinished] = useState(false);
   const [isUpdateRequired, setIsUpdateRequired] = useState(false);
   const [storeUrls, setStoreUrls] = useState({ ios: "", android: "" });
 
-  const { setTheme } = useTheme();
+  const { isLoading } = useAuth();
 
   // בדיקת גרסה
   useEffect(() => {
@@ -172,37 +193,6 @@ function AppContent() {
       }
     };
     checkAppVersion();
-  }, []);
-
-  // ניהול התחברות וטעינת Theme מה-Firestore
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (
-        currentUser &&
-        (currentUser.providerData.some((p) => p.providerId !== "password") ||
-          currentUser.emailVerified)
-      ) {
-        setUser(currentUser);
-
-        // משיכת ה-Theme הממותג של המכון
-        try {
-          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-          if (userDoc.exists()) {
-            const instId = userDoc.data().instituteId || "default_institute";
-            const instDoc = await getDoc(doc(db, "institutes", instId));
-            if (instDoc.exists() && instDoc.data().theme) {
-              setTheme(instDoc.data().theme); // הפעלת ה-Theme הדינמי!
-            }
-          }
-        } catch (e) {
-          console.log("Theme load error:", e);
-        }
-      } else {
-        setUser(null);
-      }
-      setIsLoading(false);
-    });
-    return unsubscribe;
   }, []);
 
   const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
@@ -261,14 +251,16 @@ function AppContent() {
     );
   }
 
-  return <AppNavigator user={user} />;
+  return <AppNavigator />;
 }
 
-// --- הקומפוננטה הראשית שעוטפת הכל ב-ThemeProvider ---
+// --- הקומפוננטה הראשית שעוטפת הכל ב-ThemeProvider ו-AuthProvider ---
 export default function App() {
   return (
     <ThemeProvider>
-      <AppContent />
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

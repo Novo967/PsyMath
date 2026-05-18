@@ -1,0 +1,101 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helper Functions ───
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function getUserRole() {
+      return getUserData().role;
+    }
+
+    function getUserInstituteId() {
+      return getUserData().instituteId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && getUserRole() == 'admin';
+    }
+
+    function isEditorOrAdmin() {
+      return isSignedIn() && (getUserRole() == 'editor' || getUserRole() == 'admin');
+    }
+
+    function belongsToSameInstitute(resourceInstituteId) {
+      return getUserInstituteId() == resourceInstituteId;
+    }
+
+    // ─── Users Collection ───
+    match /users/{userId} {
+      // Users can read their own profile
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      // Users can create their own profile on signup
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      // Users can update their own profile (but NOT change their role or instituteId)
+      allow update: if isSignedIn() && request.auth.uid == userId
+                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'instituteId']);
+      // Admins can read/update any user in their institute (including role changes)
+      allow read: if isAdmin() && belongsToSameInstitute(resource.data.instituteId);
+      allow update: if isAdmin() && belongsToSameInstitute(resource.data.instituteId);
+      // Allow admins to list users in their institute
+      allow list: if isAdmin();
+
+      // Simulations subcollection — only the owning user can read/write
+      match /simulations/{simId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
+    }
+
+    // ─── Questions Collection (renamed from "Questions" to "questions") ───
+    match /questions/{questionId} {
+      // Students can read questions belonging to their institute
+      allow read: if isSignedIn() && belongsToSameInstitute(resource.data.instituteId);
+      // Editors/Admins can create questions for their institute
+      allow create: if isEditorOrAdmin()
+                    && request.resource.data.instituteId == getUserInstituteId();
+      // Editors/Admins can update/delete questions belonging to their institute
+      allow update, delete: if isEditorOrAdmin()
+                            && belongsToSameInstitute(resource.data.instituteId);
+    }
+
+    // ─── Question Groups / Passages ───
+    match /question_groups/{groupId} {
+      allow read: if isSignedIn() && belongsToSameInstitute(resource.data.instituteId);
+      allow create: if isEditorOrAdmin()
+                    && request.resource.data.instituteId == getUserInstituteId();
+      allow update, delete: if isEditorOrAdmin()
+                            && belongsToSameInstitute(resource.data.instituteId);
+    }
+
+    // ─── Study Chapters ───
+    match /study_chapters/{chapterId} {
+      allow read: if isSignedIn() && belongsToSameInstitute(resource.data.instituteId);
+      allow create: if isEditorOrAdmin()
+                    && request.resource.data.instituteId == getUserInstituteId();
+      allow update, delete: if isEditorOrAdmin()
+                            && belongsToSameInstitute(resource.data.instituteId);
+    }
+
+    // ─── Institutes ───
+    match /institutes/{instituteId} {
+      // Any authenticated user can read their own institute (for theming)
+      allow read: if isSignedIn() && getUserInstituteId() == instituteId;
+      // Only admins of that institute can update it
+      allow update: if isAdmin() && getUserInstituteId() == instituteId;
+    }
+
+    // ─── App Config (version control, etc.) ───
+    match /appConfig/{configId} {
+      allow read: if isSignedIn();
+      // Only editable via Firebase Console or Admin SDK
+      allow write: if false;
+    }
+  }
+}

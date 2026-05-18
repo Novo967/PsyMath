@@ -1,10 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import {
   addDoc,
   collection,
   getDocs,
+  query,
   serverTimestamp,
+  where,
 } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
@@ -17,18 +19,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useTheme } from "../contexts/ThemeContexts"; // ייבוא ה-Hook
+import { useAuth } from "../contexts/AuthContext";
+import { useTheme } from "../contexts/ThemeContexts";
 import { auth, db } from "../firebaseConfig";
+import { Question, Subject } from "../types";
 
-interface Question {
-  id: string;
-  topic: string;
-  questionText: string;
-  options: string[];
-  correctAnswerIndex: number;
-  explanation: string;
-  difficulty: string;
-}
+
 
 const shuffleArray = <T,>(array: T[]): T[] => {
   const newArray = [...array];
@@ -40,8 +36,11 @@ const shuffleArray = <T,>(array: T[]): T[] => {
 };
 
 export default function SimulationScreen() {
-  const { theme } = useTheme(); // שליפת ערכת הנושא
-  const styles = getStyles(theme); // יצירת סטיילים דינמיים
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
+  const { userProfile } = useAuth();
+  const route = useRoute<any>();
+  const subject: Subject = route.params?.subject || "quantitative";
 
   const navigation = useNavigation<any>();
 
@@ -61,7 +60,13 @@ export default function SimulationScreen() {
   useEffect(() => {
     const fetchAndPrepareQuestions = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, "Questions"));
+        const instituteId = userProfile?.instituteId || "B2C_PUBLIC";
+        const q = query(
+          collection(db, "questions"),
+          where("instituteId", "==", instituteId),
+          where("subject", "==", subject)
+        );
+        const querySnapshot = await getDocs(q);
         const allQuestions = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
@@ -180,6 +185,7 @@ export default function SimulationScreen() {
 
       const simulationData = {
         timestamp: serverTimestamp(),
+        subject: subject,
         score: score,
         correctCount: correctAnswersCount,
         totalQuestions: questions.length,

@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native";
-import { collection, getDocs } from "firebase/firestore";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -13,8 +13,10 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import { useTheme } from "../contexts/ThemeContexts"; // ייבוא ה-Hook החדש
+import { useAuth } from "../contexts/AuthContext";
+import { useTheme } from "../contexts/ThemeContexts";
 import { db } from "../firebaseConfig";
+import { StudyChapter, Subject } from "../types";
 
 interface Chapter {
   id: string;
@@ -22,12 +24,17 @@ interface Chapter {
   icon: string;
 }
 
-const CACHE_KEY = "chapters_cache";
 const CACHE_EXPIRATION_MS = 60 * 60 * 1000; // שעה
 
 export default function StudyMaterialsScreen() {
-  const { theme } = useTheme(); // שליפת ערכת הנושא
-  const styles = getStyles(theme); // יצירת סטיילים דינמיים
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
+  const { userProfile } = useAuth();
+  const route = useRoute<any>();
+  const subject: Subject = route.params?.subject || "quantitative";
+
+  // Subject-scoped cache key
+  const CACHE_KEY = `chapters_cache_${subject}`;
 
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,7 +44,7 @@ export default function StudyMaterialsScreen() {
 
   useEffect(() => {
     fetchChapters();
-  }, []);
+  }, [subject]);
 
   const fetchChapters = async (forceRefresh = false) => {
     try {
@@ -56,7 +63,13 @@ export default function StudyMaterialsScreen() {
         }
       }
 
-      const querySnapshot = await getDocs(collection(db, "study_chapters"));
+      const instituteId = userProfile?.instituteId || "B2C_PUBLIC";
+      const q = query(
+        collection(db, "study_chapters"),
+        where("instituteId", "==", instituteId),
+        where("subject", "==", subject)
+      );
+      const querySnapshot = await getDocs(q);
       const fetchedChapters: Chapter[] = [];
 
       querySnapshot.forEach((doc) => {

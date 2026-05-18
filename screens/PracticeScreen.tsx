@@ -5,7 +5,9 @@ import {
   getDoc,
   getDocs,
   increment,
+  query,
   updateDoc,
+  where,
 } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
@@ -17,18 +19,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useTheme } from "../contexts/ThemeContexts"; // <-- הוספנו את הקונטקסט
+import { useAuth } from "../contexts/AuthContext";
+import { useTheme } from "../contexts/ThemeContexts";
 import { auth, db } from "../firebaseConfig";
+import { Question, Subject } from "../types";
+import { useRoute } from "@react-navigation/native";
 
-interface Question {
-  id: string;
-  topic: string;
-  questionText: string;
-  options: string[];
-  correctAnswerIndex: number;
-  explanation: string;
-  difficulty: string;
-}
+
 
 const shuffleArray = <T,>(array: T[]): T[] => {
   const newArray = [...array];
@@ -40,8 +37,11 @@ const shuffleArray = <T,>(array: T[]): T[] => {
 };
 
 export default function PracticeScreen() {
-  const { theme } = useTheme(); // <-- שולפים את ערכת הנושא
-  const styles = getStyles(theme); // <-- מחוללים את הסטיילים הדינמיים
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
+  const { userProfile } = useAuth();
+  const route = useRoute<any>();
+  const subject: Subject = route.params?.subject || "quantitative";
 
   const [userStatus, setUserStatus] = useState<{
     isPremium: boolean;
@@ -98,7 +98,13 @@ export default function PracticeScreen() {
 
   const fetchQuestions = async () => {
     try {
-      const querySnapshot = await getDocs(collection(db, "Questions"));
+      const instituteId = userProfile?.instituteId || "B2C_PUBLIC";
+      const q = query(
+        collection(db, "questions"),
+        where("instituteId", "==", instituteId),
+        where("subject", "==", subject)
+      );
+      const querySnapshot = await getDocs(q);
       const questionsList = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -127,10 +133,12 @@ export default function PracticeScreen() {
           totalQuestionsPracticed: increment(1),
           practicedQuestions: arrayUnion(currentQuestion.id),
           lastQuestionDate: new Date().toISOString(),
+          [`subjectStats.${subject}.totalPracticed`]: increment(1),
         };
 
         if (isCorrect) {
           updateData.totalCorrectAnswers = increment(1);
+          updateData[`subjectStats.${subject}.totalCorrect`] = increment(1);
         }
 
         await updateDoc(userRef, updateData);

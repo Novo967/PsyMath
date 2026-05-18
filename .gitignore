@@ -42,3 +42,4 @@ app-example
 /ios
 /android
 admin-scripts/serviceAccountKey.json
+admin-scripts/*.json

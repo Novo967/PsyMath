@@ -8,18 +8,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useTheme } from "../contexts/ThemeContexts"; // ייבוא ה-Hook
+import { useTheme } from "../contexts/ThemeContexts";
+import { ContentBlock, SubTopic } from "../types";
 
-interface ContentBlock {
-  type: "title" | "text" | "tip" | "rule";
-  content: string;
-}
-
-interface SubTopic {
-  id: string;
-  title: string;
-  contentBlocks: ContentBlock[];
-}
 
 export default function ChapterScreen({ route, navigation }: any) {
   const { theme } = useTheme(); // שליפת ערכת הנושא

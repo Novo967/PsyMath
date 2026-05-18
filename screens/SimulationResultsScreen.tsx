@@ -9,17 +9,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useTheme } from "../contexts/ThemeContexts"; // ייבוא ה-Hook החדש
+import { useTheme } from "../contexts/ThemeContexts";
+import { Question } from "../types";
 
-interface Question {
-  id: string;
-  topic: string;
-  questionText: string;
-  options: string[];
-  correctAnswerIndex: number;
-  explanation: string;
-  difficulty: string;
-}
+
 
 export default function SimulationResultsScreen() {
   const { theme } = useTheme(); // שליפת ערכת הנושא
