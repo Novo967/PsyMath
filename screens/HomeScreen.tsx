@@ -80,7 +80,7 @@ const SUBJECT_CONFIG: {
 ];
 
 export default function HomeScreen({ navigation }: Props) {
-  const { theme } = useTheme();
+  const { theme, branding } = useTheme();
   const styles = getStyles(theme);
   const { userProfile } = useAuth();
 
@@ -170,12 +170,10 @@ export default function HomeScreen({ navigation }: Props) {
     closeMenu(() => {
       switch (action) {
         case "policy":
-          Linking.openURL("https://novo967.github.io/Camuty-landing-page/");
+          if (branding.policyUrl) Linking.openURL(branding.policyUrl);
           break;
         case "contact":
-          Linking.openURL(
-            "https://novo967.github.io/Camuty-landing-page/contact.html"
-          );
+          if (branding.contactUrl) Linking.openURL(branding.contactUrl);
           break;
         default:
           break;
@@ -200,7 +198,7 @@ export default function HomeScreen({ navigation }: Props) {
         </View>
 
         <View style={styles.headerContainer}>
-          <Text style={styles.title}>הכנה לפסיכומטרי</Text>
+          <Text style={styles.title}>{branding.appTitle}</Text>
           <Text style={styles.subtitle}>
             שלום {userProfile?.name || ""}, מה נלמד היום?
           </Text>

@@ -167,6 +167,7 @@ function AppContent() {
   const [storeUrls, setStoreUrls] = useState({ ios: "", android: "" });
 
   const { isLoading } = useAuth();
+  const { theme } = useTheme();
 
   // בדיקת גרסה
   useEffect(() => {
@@ -222,7 +223,7 @@ function AppContent() {
         <Ionicons
           name="cloud-download-outline"
           size={80}
-          color="#4A90E2"
+          color={theme.primaryColor}
           style={{ marginBottom: 20 }}
         />
         <Text style={styles.updateTitle}>עדכון חשוב זמין!</Text>
@@ -230,7 +231,7 @@ function AppContent() {
           כדי להמשיך, חובה לעדכן לגרסה החדשה.
         </Text>
         <TouchableOpacity
-          style={styles.updateButton}
+          style={[styles.updateButton, { backgroundColor: theme.primaryColor }]}
           onPress={() => {
             const url =
               Platform.OS === "ios" ? storeUrls.ios : storeUrls.android;
@@ -246,7 +247,7 @@ function AppContent() {
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="large" color={theme.primaryColor} />
       </View>
     );
   }
@@ -292,7 +293,6 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   updateButton: {
-    backgroundColor: "#4A90E2",
     paddingVertical: 16,
     paddingHorizontal: 40,
     borderRadius: 12,

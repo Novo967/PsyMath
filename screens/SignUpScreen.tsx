@@ -33,7 +33,7 @@ import { auth, db } from "../firebaseConfig";
 import { UserRole } from "../types";
 
 export default function SignUpScreen() {
-  const { theme } = useTheme();
+  const { theme, branding } = useTheme();
   const styles = getStyles(theme);
 
   const navigation = useNavigation();
@@ -193,8 +193,8 @@ export default function SignUpScreen() {
             keyboardShouldPersistTaps="handled"
           >
             <View style={styles.header}>
-              <Text style={styles.title}>ברוך הבא לכמותי</Text>
-              <Text style={styles.subtitle}>נתחיל להתכונן?</Text>
+              <Text style={styles.title}>{branding.authWelcomeText}</Text>
+              <Text style={styles.subtitle}>{branding.authSubtitleText}</Text>
             </View>
 
             <View style={styles.form}>

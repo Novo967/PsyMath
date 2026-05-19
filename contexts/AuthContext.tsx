@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import { auth, db } from "../firebaseConfig";
 import { UserProfile, UserRole } from "../types";
-import { useTheme } from "./ThemeContexts";
+import { defaultBranding, useTheme } from "./ThemeContexts";
 
 // ---------------------------------------------------------------------------
 // Context shape
@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { setTheme } = useTheme();
+  const { setTheme, setBranding } = useTheme();
 
   /**
    * Fetch the Firestore profile and institute theme for the given Firebase user.
@@ -80,15 +80,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
         setUserProfile(profile);
 
-        // Load the institute theme
+        // Load the institute theme and branding
         const instId = profile.instituteId || "B2C_PUBLIC";
         try {
           const instDoc = await getDoc(doc(db, "institutes", instId));
-          if (instDoc.exists() && instDoc.data().theme) {
-            setTheme(instDoc.data().theme);
+          if (instDoc.exists()) {
+            const instData = instDoc.data();
+            if (instData.theme) {
+              setTheme(instData.theme);
+            }
+            if (instData.branding) {
+              setBranding({ ...defaultBranding, ...instData.branding });
+            } else {
+              setBranding(defaultBranding);
+            }
           }
         } catch (e) {
-          console.log("Theme load error:", e);
+          console.log("Theme/Branding load error:", e);
         }
       }
     } catch (e) {

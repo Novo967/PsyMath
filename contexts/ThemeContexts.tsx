@@ -21,7 +21,35 @@ export type Theme = {
   ruleBorder: string;
 };
 
-// 2. ערכת נושא ברירת מחדל (העיצוב המקורי שלכם)
+// 2. הגדרת המבנה (Type) של מיתוג המוסד (טקסטים, לוגו, קישורים)
+export type InstituteBranding = {
+  instituteName: string;
+  logoUrl: string | null;
+  splashVideoUrl: string | null;
+  appTitle: string;
+  authWelcomeText: string;
+  authSubtitleText: string;
+  loginWelcomeText: string;
+  loginSubtitleText: string;
+  contactUrl: string | null;
+  policyUrl: string | null;
+};
+
+// 3. מיתוג ברירת מחדל (B2C_PUBLIC)
+export const defaultBranding: InstituteBranding = {
+  instituteName: "PsyMath",
+  logoUrl: null,
+  splashVideoUrl: null,
+  appTitle: "הכנה לפסיכומטרי",
+  authWelcomeText: "ברוך הבא לכמותי",
+  authSubtitleText: "נתחיל להתכונן?",
+  loginWelcomeText: "התחברות",
+  loginSubtitleText: "טוב לראות אותך שוב!",
+  contactUrl: "https://novo967.github.io/Camuty-landing-page/contact.html",
+  policyUrl: "https://novo967.github.io/Camuty-landing-page/",
+};
+
+// 4. ערכת נושא ברירת מחדל (העיצוב המקורי שלכם)
 export const defaultTheme: Theme = {
   backgroundColor: "#9dbde9",
   cardBackground: "#FFFFFF",
@@ -63,31 +91,36 @@ export const kidumTheme: Theme = {
   ruleBorder: "#E53E3E",
 };
 
-// 4. הגדרת הטיפוס של הקונטקסט (מה הוא מספק למסכים)
+// 6. הגדרת הטיפוס של הקונטקסט (מה הוא מספק למסכים)
 type ThemeContextType = {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  branding: InstituteBranding;
+  setBranding: (branding: InstituteBranding) => void;
 };
 
-// 5. יצירת הקונטקסט
+// 7. יצירת הקונטקסט
 const ThemeContext = createContext<ThemeContextType>({
   theme: defaultTheme,
   setTheme: () => {},
+  branding: defaultBranding,
+  setBranding: () => {},
 });
 
-// 6. קומפוננטת ה-Provider שעוטפת את האפליקציה ב-App.tsx
+// 8. קומפוננטת ה-Provider שעוטפת את האפליקציה ב-App.tsx
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  // ניהול ה-State של העיצוב הפעיל
+  // ניהול ה-State של העיצוב הפעיל ומיתוג המוסד
   const [theme, setTheme] = useState<Theme>(defaultTheme);
+  const [branding, setBranding] = useState<InstituteBranding>(defaultBranding);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, branding, setBranding }}>
       {children}
     </ThemeContext.Provider>
   );
 };
 
-// 7. Hook מותאם אישית לשימוש קל ומהיר בכל מסך
+// 9. Hook מותאם אישית לשימוש קל ומהיר בכל מסך
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {

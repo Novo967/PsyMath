@@ -29,7 +29,7 @@ import { UserRole } from "../types";
 
 export default function LoginScreen() {
   const navigation = useNavigation<any>();
-  const { theme } = useTheme();
+  const { theme, branding } = useTheme();
   const styles = getStyles(theme);
 
   const [email, setEmail] = useState("");
@@ -130,8 +130,8 @@ export default function LoginScreen() {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <ScrollView contentContainerStyle={styles.scrollContainer}>
             <View style={styles.header}>
-              <Text style={styles.title}>התחברות</Text>
-              <Text style={styles.subtitle}>טוב לראות אותך שוב!</Text>
+              <Text style={styles.title}>{branding.loginWelcomeText}</Text>
+              <Text style={styles.subtitle}>{branding.loginSubtitleText}</Text>
             </View>
 
             <View style={styles.form}>

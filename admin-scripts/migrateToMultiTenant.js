@@ -212,6 +212,18 @@ async function createDefaultInstitute() {
   await instRef.set({
     name: "PsyMath B2C",
     theme: DEFAULT_THEME,
+    branding: {
+      instituteName: "PsyMath",
+      logoUrl: null,
+      splashVideoUrl: null,
+      appTitle: "הכנה לפסיכומטרי",
+      authWelcomeText: "ברוך הבא לכמותי",
+      authSubtitleText: "נתחיל להתכונן?",
+      loginWelcomeText: "התחברות",
+      loginSubtitleText: "טוב לראות אותך שוב!",
+      contactUrl: "https://novo967.github.io/Camuty-landing-page/contact.html",
+      policyUrl: "https://novo967.github.io/Camuty-landing-page/",
+    },
     logoUrl: null,
   });
 
