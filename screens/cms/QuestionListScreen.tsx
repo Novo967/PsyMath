@@ -51,7 +51,7 @@ export default function QuestionListScreen() {
 
   // Realtime listener
   useEffect(() => {
-    const instituteId = userProfile?.instituteId || "default_institute";
+    const instituteId = userProfile?.instituteId || "B2C_PUBLIC";
     const q = query(
       collection(db, "questions"),
       where("instituteId", "==", instituteId)

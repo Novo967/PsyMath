@@ -42,7 +42,7 @@ export default function MaterialListScreen() {
   const [subjectFilter, setSubjectFilter] = useState<Subject | "all">("all");
 
   useEffect(() => {
-    const instituteId = userProfile?.instituteId || "default_institute";
+    const instituteId = userProfile?.instituteId || "B2C_PUBLIC";
     const q = query(
       collection(db, "study_chapters"),
       where("instituteId", "==", instituteId)

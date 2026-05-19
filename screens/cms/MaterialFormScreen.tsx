@@ -181,7 +181,7 @@ export default function MaterialFormScreen() {
     if (!validate()) return;
     setSaving(true);
 
-    const instituteId = userProfile?.instituteId || "default_institute";
+    const instituteId = userProfile?.instituteId || "B2C_PUBLIC";
     const chapterData = {
       subject,
       title: title.trim(),

@@ -5,12 +5,13 @@
  * for the multi-tenant B2B2C architecture.
  *
  * What it does:
- * 1. Adds `role` field to all existing user documents (defaults to "student",
- *    specific UIDs set to "admin").
+ * 1. Adds `role` and `subjectStats` fields to all existing user documents
+ *    (defaults to "student", specific UIDs set to "admin").
+ *    Renames `instituteId: 'default_institute'` → `'B2C_PUBLIC'`.
  * 2. Copies questions from "Questions" (uppercase) to "questions" (lowercase),
  *    adding `instituteId`, `subject`, `groupId`, and `groupOrder` fields.
  * 3. Adds `instituteId` and `subject` to all `study_chapters` documents.
- * 4. Creates the `institutes/default_institute` document with the default theme.
+ * 4. Creates the `institutes/B2C_PUBLIC` document with the default theme.
  *
  * Usage:
  *   node migrateToMultiTenant.js
@@ -35,7 +36,7 @@ const ADMIN_UIDS = [
   "B0wFwwhnYpWIFKlRZrll3RgY6Ea2",
 ];
 
-const DEFAULT_INSTITUTE_ID = "default_institute";
+const DEFAULT_INSTITUTE_ID = "B2C_PUBLIC";
 
 const DEFAULT_THEME = {
   backgroundColor: "#9dbde9",
@@ -67,37 +68,57 @@ async function migrateUsers() {
 
   for (const doc of usersSnap.docs) {
     const data = doc.data();
+    const updates = {};
+    let needsUpdate = false;
 
-    // Skip if role already exists
-    if (data.role) {
-      skipped++;
-      continue;
+    // Set role if missing
+    if (!data.role) {
+      const role = ADMIN_UIDS.includes(doc.id) ? "admin" : "student";
+      updates.role = role;
+      needsUpdate = true;
     }
 
-    const role = ADMIN_UIDS.includes(doc.id) ? "admin" : "student";
-    const updates = {
-      role: role,
-    };
-
-    // Ensure instituteId exists
-    if (!data.instituteId) {
+    // Rename default_institute → B2C_PUBLIC
+    if (data.instituteId === "default_institute" || !data.instituteId) {
       updates.instituteId = DEFAULT_INSTITUTE_ID;
+      needsUpdate = true;
+    }
+
+    // Backfill subjectStats if missing
+    if (!data.subjectStats) {
+      updates.subjectStats = {
+        quantitative: {
+          totalPracticed: data.totalQuestionsPracticed || 0,
+          totalCorrect: data.totalCorrectAnswers || 0,
+        },
+        verbal: { totalPracticed: 0, totalCorrect: 0 },
+        english: { totalPracticed: 0, totalCorrect: 0 },
+      };
+      needsUpdate = true;
     }
 
     // Ensure stats fields exist
     if (data.totalQuestionsPracticed === undefined) {
       updates.totalQuestionsPracticed = 0;
+      needsUpdate = true;
     }
     if (data.totalCorrectAnswers === undefined) {
       updates.totalCorrectAnswers = 0;
+      needsUpdate = true;
     }
     if (data.practicedQuestions === undefined) {
       updates.practicedQuestions = [];
+      needsUpdate = true;
+    }
+
+    if (!needsUpdate) {
+      skipped++;
+      continue;
     }
 
     await doc.ref.update(updates);
     updated++;
-    console.log(`  ✅ ${doc.id} → role: ${role}`);
+    console.log(`  ✅ ${doc.id} → updated`);
   }
 
   console.log(`  Users migrated: ${updated}, already up-to-date: ${skipped}`);
@@ -189,12 +210,12 @@ async function createDefaultInstitute() {
   }
 
   await instRef.set({
-    name: "PsyMath Default",
+    name: "PsyMath B2C",
     theme: DEFAULT_THEME,
     logoUrl: null,
   });
 
-  console.log("  ✅ Created institutes/default_institute");
+  console.log("  ✅ Created institutes/B2C_PUBLIC");
 }
 
 // ── Main ──

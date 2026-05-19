@@ -8,8 +8,9 @@ import {
   getDocs,
   orderBy,
   query,
+  where,
 } from "firebase/firestore";
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -23,44 +24,95 @@ import {
   View,
 } from "react-native";
 import { captureRef } from "react-native-view-shot";
+import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContexts";
 import { auth, db } from "../firebaseConfig";
-import { Question, FormattedSimulation } from "../types";
+import {
+  FormattedSimulation,
+  Question,
+  Subject,
+  SubjectStats,
+} from "../types";
 
 const { width } = Dimensions.get("window");
 
-
+// Subject tab configuration
+const SUBJECT_TABS: {
+  key: Subject;
+  label: string;
+  color: string;
+}[] = [
+  { key: "quantitative", label: "כמותי", color: "#F3902E" },
+  { key: "verbal", label: "מילולי", color: "#8B5CF6" },
+  { key: "english", label: "אנגלית", color: "#3B82F6" },
+];
 
 export default function StatisticsScreen() {
-  const { theme } = useTheme(); // שליפת ערכת הנושא
-  const styles = getStyles(theme); // יצירת סטיילים דינמיים
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
+  const { userProfile } = useAuth();
 
   const viewToSnapshotRef = useRef<View>(null);
   const navigation = useNavigation<any>();
 
+  // Subject tab state
+  const [selectedSubject, setSelectedSubject] =
+    useState<Subject>("quantitative");
+
   const [loading, setLoading] = useState(true);
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
-  const [totalQuestionsSolved, setTotalQuestionsSolved] = useState(0);
-  const [accuracyRate, setAccuracyRate] = useState(0);
+
+  // Per-subject stats (loaded once from user doc)
+  const [subjectStatsMap, setSubjectStatsMap] = useState<Record<
+    Subject,
+    SubjectStats
+  > | null>(null);
+
+  // Simulations (re-fetched per subject)
+  const [allSimulations, setAllSimulations] = useState<FormattedSimulation[]>(
+    []
+  );
   const [improvementTrend, setImprovementTrend] = useState("0%");
 
-  const [allSimulations, setAllSimulations] = useState<FormattedSimulation[]>([]);
   const [showAllHistory, setShowAllHistory] = useState(false);
 
+  // Share toggles
   const [showAccuracy, setShowAccuracy] = useState(true);
   const [showQuestions, setShowQuestions] = useState(true);
   const [showTrend, setShowTrend] = useState(true);
   const [showHistory, setShowHistory] = useState(true);
-
   const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
 
+  // Derived stats for the currently selected subject
+  const currentStats = subjectStatsMap?.[selectedSubject] ?? {
+    totalPracticed: 0,
+    totalCorrect: 0,
+  };
+  const accuracyRate =
+    currentStats.totalPracticed > 0
+      ? Math.round(
+          (currentStats.totalCorrect / currentStats.totalPracticed) * 100
+        )
+      : 0;
+  const totalQuestionsSolved = currentStats.totalPracticed;
+
+  // Active subject tab color
+  const activeTabColor =
+    SUBJECT_TABS.find((t) => t.key === selectedSubject)?.color || "#F3902E";
+
+  // Load user stats once on focus
   useFocusEffect(
     useCallback(() => {
-      fetchStatistics();
-    }, []),
+      loadUserStats();
+    }, [])
   );
 
-  const fetchStatistics = async () => {
+  // Re-fetch simulations when subject changes
+  useEffect(() => {
+    fetchSimulations();
+  }, [selectedSubject]);
+
+  const loadUserStats = async () => {
     if (!auth.currentUser) return;
     setLoading(true);
 
@@ -70,25 +122,39 @@ export default function StatisticsScreen() {
 
       if (userSnap.exists()) {
         const data = userSnap.data();
-        const totalPracticed = data.totalQuestionsPracticed || 0;
-        const totalCorrect = data.totalCorrectAnswers || 0;
+        const defaultStats: SubjectStats = {
+          totalPracticed: 0,
+          totalCorrect: 0,
+        };
 
-        setTotalQuestionsSolved(totalPracticed);
-
-        if (totalPracticed > 0) {
-          setAccuracyRate(Math.round((totalCorrect / totalPracticed) * 100));
-        } else {
-          setAccuracyRate(0);
-        }
+        setSubjectStatsMap({
+          quantitative: data.subjectStats?.quantitative ?? defaultStats,
+          verbal: data.subjectStats?.verbal ?? defaultStats,
+          english: data.subjectStats?.english ?? defaultStats,
+        });
       }
+    } catch (error) {
+      console.error("Error fetching user stats:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const fetchSimulations = async () => {
+    if (!auth.currentUser) return;
+
+    try {
       const simsRef = collection(
         db,
         "users",
         auth.currentUser.uid,
-        "simulations",
+        "simulations"
       );
-      const q = query(simsRef, orderBy("timestamp", "asc"));
+      const q = query(
+        simsRef,
+        where("subject", "==", selectedSubject),
+        orderBy("timestamp", "asc")
+      );
       const simsSnap = await getDocs(q);
 
       let fetchedSims: any[] = [];
@@ -100,7 +166,8 @@ export default function StatisticsScreen() {
       let previousScore: number | null = null;
 
       for (let sim of fetchedSims) {
-        let changeVal = previousScore !== null ? sim.score - previousScore : 0;
+        let changeVal =
+          previousScore !== null ? sim.score - previousScore : 0;
         let changeStr = changeVal > 0 ? `+${changeVal}` : `${changeVal}`;
 
         let dateStr = "N/A";
@@ -133,9 +200,7 @@ export default function StatisticsScreen() {
       formattedSims.reverse();
       setAllSimulations(formattedSims);
     } catch (error) {
-      console.error("Error fetching stats:", error);
-    } finally {
-      setLoading(false);
+      console.error("Error fetching simulations:", error);
     }
   };
 
@@ -251,24 +316,60 @@ export default function StatisticsScreen() {
             <Text style={styles.shareCardTitle}>ההתקדמות שלי 🔥</Text>
           </View>
 
+          {/* Subject Tabs */}
+          <View style={styles.subjectTabsRow}>
+            {SUBJECT_TABS.map((tab) => {
+              const isActive = selectedSubject === tab.key;
+              return (
+                <TouchableOpacity
+                  key={tab.key}
+                  style={[
+                    styles.subjectTab,
+                    isActive && {
+                      backgroundColor: tab.color,
+                    },
+                  ]}
+                  onPress={() => setSelectedSubject(tab.key)}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.subjectTabText,
+                      isActive && styles.subjectTabTextActive,
+                    ]}
+                  >
+                    {tab.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Stats Grid */}
           {(showAccuracy || showQuestions) && (
             <View style={styles.statsGrid}>
               {showAccuracy && (
                 <View
-                  style={[styles.statBox, !showQuestions && { width: "100%" }]}
+                  style={[
+                    styles.statBox,
+                    !showQuestions && { width: "100%" },
+                  ]}
                 >
                   <Ionicons
                     name="checkmark-circle-outline"
                     size={24}
-                    color={theme.successBorder}
+                    color={activeTabColor}
                   />
                   <Text style={styles.statValue}>{accuracyRate}%</Text>
-                  <Text style={styles.statLabel}>דיוק כללי</Text>
+                  <Text style={styles.statLabel}>דיוק</Text>
                 </View>
               )}
               {showQuestions && (
                 <View
-                  style={[styles.statBox, !showAccuracy && { width: "100%" }]}
+                  style={[
+                    styles.statBox,
+                    !showAccuracy && { width: "100%" },
+                  ]}
                 >
                   <Ionicons name="flame-outline" size={24} color="#ED8936" />
                   <Text style={styles.statValue}>{totalQuestionsSolved}</Text>
@@ -278,6 +379,7 @@ export default function StatisticsScreen() {
             </View>
           )}
 
+          {/* Improvement trend */}
           {showTrend && allSimulations.length > 1 && (
             <View
               style={[
@@ -296,7 +398,7 @@ export default function StatisticsScreen() {
                     },
                   ]}
                 >
-                  מגמת שיפור כללית
+                  מגמת שיפור
                 </Text>
                 <Text
                   style={[
@@ -312,12 +414,15 @@ export default function StatisticsScreen() {
             </View>
           )}
 
+          {/* Simulation history */}
           {showHistory && (
             <View style={styles.historyShareContainer}>
               <Text style={styles.listHeaderShare}>סימולציות אחרונות</Text>
 
               {allSimulations.length === 0 ? (
-                <Text style={styles.emptyStateText}>טרם ביצעת סימולציות.</Text>
+                <Text style={styles.emptyStateText}>
+                  טרם ביצעת סימולציות בנושא זה.
+                </Text>
               ) : (
                 <>
                   {simsToDisplay.map((sim) => (
@@ -334,7 +439,9 @@ export default function StatisticsScreen() {
                           sim.changeNum < 0 && {
                             backgroundColor: theme.errorBackground,
                           },
-                          sim.changeNum === 0 && { backgroundColor: "#EDF2F7" },
+                          sim.changeNum === 0 && {
+                            backgroundColor: "#EDF2F7",
+                          },
                         ]}
                       >
                         <Text
@@ -367,7 +474,9 @@ export default function StatisticsScreen() {
                         />
                       </View>
                       <View style={styles.simInfo}>
-                        <Text style={styles.simScore}>ציון: {sim.score}</Text>
+                        <Text style={styles.simScore}>
+                          ציון: {sim.score}
+                        </Text>
                         <Text style={styles.simDate}>{sim.date}</Text>
                       </View>
                     </TouchableOpacity>
@@ -385,10 +494,14 @@ export default function StatisticsScreen() {
                           { color: theme.primaryColor },
                         ]}
                       >
-                        {showAllHistory ? "הצג פחות" : "הצג את כל ההיסטוריה"}
+                        {showAllHistory
+                          ? "הצג פחות"
+                          : "הצג את כל ההיסטוריה"}
                       </Text>
                       <Ionicons
-                        name={showAllHistory ? "chevron-up" : "chevron-down"}
+                        name={
+                          showAllHistory ? "chevron-up" : "chevron-down"
+                        }
                         size={16}
                         color={theme.primaryColor}
                       />
@@ -527,6 +640,29 @@ const getStyles = (theme: any) =>
       color: theme.textPrimary,
     },
 
+    // Subject tabs
+    subjectTabsRow: {
+      flexDirection: "row-reverse",
+      gap: 8,
+      marginBottom: 20,
+    },
+    subjectTab: {
+      flex: 1,
+      paddingVertical: 10,
+      borderRadius: 12,
+      alignItems: "center",
+      backgroundColor: "#F7FAFC",
+    },
+    subjectTabText: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: theme.textSecondary,
+    },
+    subjectTabTextActive: {
+      color: "#FFFFFF",
+    },
+
+    // Share button
     mainShareButton: {
       flexDirection: "row-reverse",
       alignItems: "center",
@@ -545,6 +681,7 @@ const getStyles = (theme: any) =>
       fontSize: 18,
     },
 
+    // Edit panel
     editPanel: {
       backgroundColor: theme.cardBackground,
       borderRadius: 16,
@@ -594,6 +731,7 @@ const getStyles = (theme: any) =>
       fontSize: 16,
     },
 
+    // Share container / card
     shareContainer: {
       backgroundColor: theme.cardBackground,
       borderRadius: 24,
@@ -618,6 +756,8 @@ const getStyles = (theme: any) =>
       fontWeight: "800",
       color: theme.textPrimary,
     },
+
+    // Stats grid
     statsGrid: {
       flexDirection: "row",
       justifyContent: "space-between",
@@ -637,6 +777,8 @@ const getStyles = (theme: any) =>
       marginTop: 5,
     },
     statLabel: { fontSize: 12, color: theme.textSecondary, marginTop: 2 },
+
+    // Trend
     miniChartContainer: {
       backgroundColor: theme.successBackground,
       padding: 12,
@@ -646,7 +788,13 @@ const getStyles = (theme: any) =>
     },
     trendInfo: { flexDirection: "row-reverse", alignItems: "center" },
     trendLabel: { fontSize: 14, color: theme.successText, marginLeft: 8 },
-    trendValue: { fontSize: 16, fontWeight: "700", color: theme.successBorder },
+    trendValue: {
+      fontSize: 16,
+      fontWeight: "700",
+      color: theme.successBorder,
+    },
+
+    // History
     historyShareContainer: {
       marginTop: 15,
       borderTopWidth: 1,

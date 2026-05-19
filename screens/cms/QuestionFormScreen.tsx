@@ -95,7 +95,7 @@ export default function QuestionFormScreen() {
   }, [questionId]);
 
   const handlePickImage = async () => {
-    const instituteId = userProfile?.instituteId || "default_institute";
+    const instituteId = userProfile?.instituteId || "B2C_PUBLIC";
     const filename = `${Date.now()}_question.jpg`;
     const path = `questions/${instituteId}/${filename}`;
     const url = await pickAndUpload(path);
@@ -143,7 +143,7 @@ export default function QuestionFormScreen() {
     if (!validate()) return;
 
     setSaving(true);
-    const instituteId = userProfile?.instituteId || "default_institute";
+    const instituteId = userProfile?.instituteId || "B2C_PUBLIC";
 
     // Filter out empty options
     const cleanOptions = options.filter((o) => o.trim());
