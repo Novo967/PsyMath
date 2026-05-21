@@ -35,6 +35,7 @@ import SimulationResultsScreen from "./screens/SimulationResultsScreen";
 import SimulationScreen from "./screens/SimulationScreen";
 import StatisticsScreen from "./screens/StatisticsScreen";
 import StudyMaterialsScreen from "./screens/StudyMaterialsScreen";
+import WeaknessAnalyzerScreen from "./screens/WeaknessAnalyzerScreen";
 
 // CMS Screens
 import CMSDashboardScreen from "./screens/cms/CMSDashboardScreen";
@@ -49,14 +50,15 @@ SplashScreen.preventAutoHideAsync();
 
 export type RootStackParamList = {
   Home: undefined;
-  StudyMaterials: { subject: Subject };
-  Practice: { subject: Subject };
+  StudyMaterials: { subject: Subject; defaultTopic?: string };
+  Practice: { subject: Subject; sessionQuestions?: any[] };
   Simulation: { subject: Subject };
   Statistics: undefined;
   SignUp: undefined;
   Login: undefined;
   SimulationResultsScreen: any;
   ChapterScreen: any;
+  WeaknessAnalyzer: { subject: Subject };
   // CMS screens
   CMSDashboard: undefined;
   QuestionList: undefined;
@@ -129,6 +131,7 @@ function AppNavigator() {
             <Stack.Screen name="Practice" component={PracticeScreen} />
             <Stack.Screen name="Simulation" component={SimulationScreen} />
             <Stack.Screen name="Statistics" component={StatisticsScreen} />
+            <Stack.Screen name="WeaknessAnalyzer" component={WeaknessAnalyzerScreen} />
             <Stack.Screen name="ChapterScreen" component={ChapterScreen} />
             <Stack.Screen
               name="SimulationResultsScreen"

@@ -43,6 +43,14 @@ export interface UserProfile {
   createdAt: string;
 }
 
+export interface TopicStats {
+  topicId: string;
+  subject: Subject;
+  totalAttempted: number;
+  totalCorrect: number;
+  wrongQuestionIds: string[];
+}
+
 
 // ---------- Question Document (questions/{id}) ----------
 

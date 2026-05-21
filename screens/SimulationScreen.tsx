@@ -8,6 +8,7 @@ import {
   serverTimestamp,
   where,
 } from "firebase/firestore";
+import { processSimulationTopicStats } from "../utils/topicStatsUtils";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -199,6 +200,9 @@ export default function SimulationScreen() {
         "simulations",
       );
       await addDoc(userSimulationsRef, simulationData);
+      
+      // Update topic stats
+      await processSimulationTopicStats(auth.currentUser.uid, questions, answers);
 
       navigation.replace("SimulationResultsScreen", {
         questions: questions,

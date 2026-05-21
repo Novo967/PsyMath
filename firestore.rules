@@ -3,7 +3,6 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ─── Helper Functions ───
-
     function isSignedIn() {
       return request.auth != null;
     }
@@ -13,11 +12,15 @@ service cloud.firestore {
     }
 
     function getUserRole() {
-      return getUserData().role;
+      let data = getUserData();
+      // שימוש ב-get כדי למנוע שגיאה עבור משתמשי האפליקציה הישנה שאין להם את השדה הזה
+      return data.get('role', 'student'); 
     }
 
     function getUserInstituteId() {
-      return getUserData().instituteId;
+      let data = getUserData();
+      // מחזיר null אם השדה לא קיים
+      return data.get('instituteId', null);
     }
 
     function isAdmin() {
@@ -29,73 +32,79 @@ service cloud.firestore {
     }
 
     function belongsToSameInstitute(resourceInstituteId) {
-      return getUserInstituteId() == resourceInstituteId;
+      let userInst = getUserInstituteId();
+      return userInst != null && userInst == resourceInstituteId;
+    }
+
+    // ─── App Config (Version Control) ───
+    match /appConfig/{document} {
+      // חייב להישאר פתוח לכולם כדי שהאפליקציה באוויר תוכל לבדוק גרסה במסך הטעינה
+      allow read: if true;
+      allow write: if false; 
     }
 
     // ─── Users Collection ───
     match /users/{userId} {
-      // Users can read their own profile
+      // משתמשים רגילים יכולים לקרוא, ליצור ולעדכן את הפרופיל של עצמם
       allow read: if isSignedIn() && request.auth.uid == userId;
-      // Users can create their own profile on signup
       allow create: if isSignedIn() && request.auth.uid == userId;
-      // Users can update their own profile (but NOT change their role or instituteId)
+      // מוודא שהמשתמש לא יכול להעניק לעצמו הרשאות מנהל או לשנות מוסד דרך הקליינט
       allow update: if isSignedIn() && request.auth.uid == userId
                     && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'instituteId']);
-      // Admins can read/update any user in their institute (including role changes)
-      allow read: if isAdmin() && belongsToSameInstitute(resource.data.instituteId);
+      
+      // פעולות ניהול למנהלי מוסד
       allow update: if isAdmin() && belongsToSameInstitute(resource.data.instituteId);
-      // Allow admins to list users in their institute
-      allow list: if isAdmin();
+      allow list: if isAdmin() && resource.data.instituteId == getUserInstituteId();
 
-      // Simulations subcollection — only the owning user can read/write
+      // תת-קולקציית סימולציות (רלוונטי לשתי הגרסאות)
       match /simulations/{simId} {
         allow read, write: if isSignedIn() && request.auth.uid == userId;
       }
+      match /topicStats/{topicId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
+    }
+		 
+    // ─── Old App Collections (B2C) ───
+    
+    // האוסף הישן של השאלות - פתוח לקריאה לכל המחוברים באפליקציה הנוכחית
+    match /Questions/{questionId} {
+      allow read: if isSignedIn();
+      allow write: if false;
     }
 
-    // ─── Questions Collection (renamed from "Questions" to "questions") ───
+    // ─── New B2B App Collections ───
+    
+    // האוסף החדש של השאלות - תלוי הרשאות ומוסד
     match /questions/{questionId} {
-      // Students can read questions belonging to their institute
       allow read: if isSignedIn() && belongsToSameInstitute(resource.data.instituteId);
-      // Editors/Admins can create questions for their institute
-      allow create: if isEditorOrAdmin()
-                    && request.resource.data.instituteId == getUserInstituteId();
-      // Editors/Admins can update/delete questions belonging to their institute
-      allow update, delete: if isEditorOrAdmin()
-                            && belongsToSameInstitute(resource.data.instituteId);
+      allow create: if isEditorOrAdmin() && request.resource.data.instituteId == getUserInstituteId();
+      allow update, delete: if isEditorOrAdmin() && belongsToSameInstitute(resource.data.instituteId);
     }
 
-    // ─── Question Groups / Passages ───
     match /question_groups/{groupId} {
       allow read: if isSignedIn() && belongsToSameInstitute(resource.data.instituteId);
-      allow create: if isEditorOrAdmin()
-                    && request.resource.data.instituteId == getUserInstituteId();
-      allow update, delete: if isEditorOrAdmin()
-                            && belongsToSameInstitute(resource.data.instituteId);
+      allow create: if isEditorOrAdmin() && request.resource.data.instituteId == getUserInstituteId();
+      allow update, delete: if isEditorOrAdmin() && belongsToSameInstitute(resource.data.instituteId);
     }
 
-    // ─── Study Chapters ───
-    match /study_chapters/{chapterId} {
-      allow read: if isSignedIn() && belongsToSameInstitute(resource.data.instituteId);
-      allow create: if isEditorOrAdmin()
-                    && request.resource.data.instituteId == getUserInstituteId();
-      allow update, delete: if isEditorOrAdmin()
-                            && belongsToSameInstitute(resource.data.instituteId);
-    }
-
-    // ─── Institutes ───
     match /institutes/{instituteId} {
-      // Any authenticated user can read their own institute (for theming)
       allow read: if isSignedIn() && getUserInstituteId() == instituteId;
-      // Only admins of that institute can update it
       allow update: if isAdmin() && getUserInstituteId() == instituteId;
     }
 
-    // ─── App Config (version control, etc.) ───
-    match /appConfig/{configId} {
-      allow read: if isSignedIn();
-      // Only editable via Firebase Console or Admin SDK
-      allow write: if false;
+    // ─── Shared Collections ───
+    
+    // קולקציית חומרי הלימוד - משמשת גם את האפליקציה שבאוויר וגם את ה-B2B
+    match /study_chapters/{chapterId} {
+      // תנאי חכם: מאפשר קריאה אם זה חומר ישן (ללא instituteId) או חומר השייך למוסד של המשתמש
+      allow read: if isSignedIn() && (
+        !("instituteId" in resource.data) || 
+        belongsToSameInstitute(resource.data.instituteId)
+      );
+      // כתיבה, עריכה ומחיקה - רק לצוות המוסד
+      allow create: if isEditorOrAdmin() && request.resource.data.instituteId == getUserInstituteId();
+      allow update, delete: if isEditorOrAdmin() && belongsToSameInstitute(resource.data.instituteId);
     }
   }
 }

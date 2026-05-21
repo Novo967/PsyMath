@@ -42,6 +42,7 @@ export default function PracticeScreen() {
   const { userProfile } = useAuth();
   const route = useRoute<any>();
   const subject: Subject = route.params?.subject || "quantitative";
+  const sessionQuestions: Question[] | undefined = route.params?.sessionQuestions;
 
   const [userStatus, setUserStatus] = useState<{
     isPremium: boolean;
@@ -61,7 +62,11 @@ export default function PracticeScreen() {
   useEffect(() => {
     const loadData = async () => {
       await checkUserLimit();
-      await fetchQuestions();
+      if (sessionQuestions && sessionQuestions.length > 0) {
+        setQuestions(sessionQuestions);
+      } else {
+        await fetchQuestions();
+      }
       setLoading(false);
     };
     loadData();

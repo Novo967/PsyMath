@@ -513,6 +513,21 @@ export default function StatisticsScreen() {
           )}
         </View>
 
+        <TouchableOpacity
+          style={[
+            styles.analyzerButton,
+            {
+              backgroundColor: theme.secondaryColor || "#8B5CF6",
+            },
+          ]}
+          onPress={() => navigation.navigate("WeaknessAnalyzer", { subject: selectedSubject })}
+        >
+          <Ionicons name="analytics" size={22} color={theme.textLight} />
+          <Text style={[styles.mainShareButtonText, { color: theme.textLight }]}>
+            {" "}מנתח חולשות - תרגול ממוקד{" "}
+          </Text>
+        </TouchableOpacity>
+
         {!isShareMenuOpen ? (
           <TouchableOpacity
             style={[
@@ -679,6 +694,18 @@ const getStyles = (theme: any) =>
       marginRight: 10,
       fontWeight: "700",
       fontSize: 18,
+    },
+    analyzerButton: {
+      flexDirection: "row-reverse",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 16,
+      borderRadius: 16,
+      marginBottom: 15,
+      shadowOpacity: 0.3,
+      shadowOffset: { width: 0, height: 4 },
+      shadowRadius: 8,
+      elevation: 4,
     },
 
     // Edit panel
