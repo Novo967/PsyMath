@@ -98,6 +98,25 @@ export default function CMSDashboardScreen() {
             </View>
             <Ionicons name="chevron-back" size={20} color="#CBD5E0" />
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.card}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate("AIBatchUpload")}
+          >
+            <View
+              style={[styles.cardIcon, { backgroundColor: "#FEF3C7" }]}
+            >
+              <Ionicons name="sparkles" size={32} color="#D97706" />
+            </View>
+            <View style={styles.cardTextContainer}>
+              <Text style={styles.cardTitle}>העלאת שאלות עם AI</Text>
+              <Text style={styles.cardDescription}>
+                חילוץ שאלות מקובץ באמצעות בינה מלאכותית
+              </Text>
+            </View>
+            <Ionicons name="chevron-back" size={20} color="#CBD5E0" />
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>

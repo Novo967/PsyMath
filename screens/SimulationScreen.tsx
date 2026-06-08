@@ -13,6 +13,7 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -24,6 +25,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContexts";
 import { auth, db } from "../firebaseConfig";
 import { Question, Subject } from "../types";
+import MathText from "../components/MathText";
 
 
 
@@ -317,9 +319,18 @@ export default function SimulationScreen() {
         >
           <View style={styles.questionCard}>
             <Text style={styles.topicBadge}>{currentQuestion.topic}</Text>
-            <Text style={styles.questionText}>
-              {currentQuestion.questionText}
-            </Text>
+            {currentQuestion.imageUrl ? (
+              <Image 
+                source={{ uri: currentQuestion.imageUrl }} 
+                style={styles.diagramImage} 
+              />
+            ) : null}
+            <MathText
+              text={currentQuestion.questionText}
+              fontSize={20}
+              color={theme.textPrimary}
+              style={{ marginBottom: 30 }}
+            />
 
             <View style={styles.optionsContainer}>
               {currentQuestion.options.map((opt, index) => (
@@ -335,17 +346,17 @@ export default function SimulationScreen() {
                   onPress={() => handleSelectOption(index)}
                   activeOpacity={0.7}
                 >
-                  <Text
-                    style={[
-                      styles.optionText,
-                      currentAnswer === index && {
-                        color: theme.secondaryColor,
-                        fontWeight: "600",
-                      },
-                    ]}
-                  >
-                    {opt}
-                  </Text>
+                  <View pointerEvents="none" style={{ flex: 1, marginRight: 15 }}>
+                    <MathText
+                      text={opt}
+                      fontSize={16}
+                      color={
+                        currentAnswer === index
+                          ? theme.secondaryColor
+                          : theme.textSecondary
+                      }
+                    />
+                  </View>
                   <View
                     style={[
                       styles.radioCircle,
@@ -491,6 +502,13 @@ const getStyles = (theme: any) =>
       fontWeight: "600",
       marginBottom: 15,
       overflow: "hidden",
+    },
+    diagramImage: {
+      width: "100%",
+      height: 200,
+      resizeMode: "contain",
+      marginBottom: 20,
+      borderRadius: 12,
     },
     questionText: {
       fontSize: 20,

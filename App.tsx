@@ -38,6 +38,7 @@ import StudyMaterialsScreen from "./screens/StudyMaterialsScreen";
 import WeaknessAnalyzerScreen from "./screens/WeaknessAnalyzerScreen";
 
 // CMS Screens
+import AIBatchUploadScreen from "./screens/cms/AIBatchUploadScreen";
 import CMSDashboardScreen from "./screens/cms/CMSDashboardScreen";
 import MaterialFormScreen from "./screens/cms/MaterialFormScreen";
 import MaterialListScreen from "./screens/cms/MaterialListScreen";
@@ -65,6 +66,7 @@ export type RootStackParamList = {
   QuestionForm: { questionId?: string };
   MaterialList: undefined;
   MaterialForm: { chapterId?: string };
+  AIBatchUpload: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -143,6 +145,7 @@ function AppNavigator() {
             <Stack.Screen name="QuestionForm" component={QuestionFormScreen} />
             <Stack.Screen name="MaterialList" component={MaterialListScreen} />
             <Stack.Screen name="MaterialForm" component={MaterialFormScreen} />
+            <Stack.Screen name="AIBatchUpload" component={AIBatchUploadScreen} />
           </>
         ) : (
           <>

@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import React from "react";
 import {
+  Image,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -11,6 +12,7 @@ import {
 } from "react-native";
 import { useTheme } from "../contexts/ThemeContexts";
 import { Question } from "../types";
+import MathText from "../components/MathText";
 
 
 
@@ -114,7 +116,18 @@ export default function SimulationResultsScreen() {
               </View>
 
               <Text style={styles.topicText}>{question.topic}</Text>
-              <Text style={styles.questionText}>{question.questionText}</Text>
+              {question.imageUrl ? (
+                <Image 
+                  source={{ uri: question.imageUrl }} 
+                  style={styles.diagramImage} 
+                />
+              ) : null}
+              <MathText 
+                text={question.questionText} 
+                fontSize={18} 
+                color={theme.textPrimary} 
+                style={{ marginBottom: 15 }}
+              />
 
               <View style={styles.optionsContainer}>
                 {question.options.map((opt, optIndex) => {
@@ -124,18 +137,18 @@ export default function SimulationResultsScreen() {
                     optIndex === userAnswer && !isCorrect;
 
                   let optionStyle = styles.optionNeutral;
-                  let textStyle = styles.optionTextNeutral;
+                  let textColor = theme.textSecondary;
                   let iconName = "";
                   let iconColor = "";
 
                   if (isThisCorrectOption) {
                     optionStyle = styles.optionCorrect;
-                    textStyle = styles.optionTextCorrect;
+                    textColor = theme.successText;
                     iconName = "checkmark-circle";
                     iconColor = theme.successBorder;
                   } else if (isThisUserWrongOption) {
                     optionStyle = styles.optionWrong;
-                    textStyle = styles.optionTextWrong;
+                    textColor = theme.errorText;
                     iconName = "close-circle";
                     iconColor = theme.errorBorder;
                   }
@@ -145,7 +158,13 @@ export default function SimulationResultsScreen() {
                       key={optIndex}
                       style={[styles.optionBase, optionStyle]}
                     >
-                      <Text style={[styles.optionText, textStyle]}>{opt}</Text>
+                      <View style={{ flex: 1 }}>
+                        <MathText
+                          text={opt}
+                          fontSize={16}
+                          color={textColor}
+                        />
+                      </View>
                       {iconName !== "" && (
                         <Ionicons
                           name={iconName as any}
@@ -175,9 +194,12 @@ export default function SimulationResultsScreen() {
                     הסבר הפתרון:
                   </Text>
                 </View>
-                <Text style={styles.explanationText}>
-                  {question.explanation}
-                </Text>
+                <MathText 
+                  text={question.explanation || ""} 
+                  fontSize={15} 
+                  color={theme.textSecondary} 
+                  style={{ marginTop: 8 }}
+                />
               </View>
             </View>
           );
@@ -301,6 +323,13 @@ const getStyles = (theme: any) =>
       textAlign: "right",
       marginBottom: 8,
     },
+    diagramImage: {
+      width: "100%",
+      height: 200,
+      resizeMode: "contain",
+      marginBottom: 20,
+      borderRadius: 12,
+    },
     questionText: {
       fontSize: 18,
       fontWeight: "600",
@@ -373,6 +402,7 @@ const getStyles = (theme: any) =>
       textAlign: "right",
       lineHeight: 24,
     },
+
     homeButton: {
       backgroundColor: theme.primaryColor,
       paddingVertical: 16,

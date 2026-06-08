@@ -27,6 +27,7 @@ import { useTheme } from "../../contexts/ThemeContexts";
 import { db } from "../../firebaseConfig";
 import { useImageUpload } from "../../hooks/useImageUpload";
 import { Difficulty, Subject } from "../../types";
+import MathText from "../../components/MathText";
 
 const SUBJECTS: { key: Subject; label: string }[] = [
   { key: "quantitative", label: "כמותי" },
@@ -280,6 +281,12 @@ export default function QuestionFormScreen() {
             multiline
             placeholderTextColor={theme.textSecondary + "80"}
           />
+          {questionText.trim() ? (
+            <View style={styles.previewBox}>
+              <Text style={styles.previewLabel}>תצוגה מקדימה (LaTeX):</Text>
+              <MathText text={questionText} fontSize={15} color={theme.textPrimary} />
+            </View>
+          ) : null}
 
           {/* Image upload */}
           <Text style={styles.label}>תמונה (אופציונלי)</Text>
@@ -320,26 +327,33 @@ export default function QuestionFormScreen() {
           {/* Options */}
           <Text style={styles.label}>אפשרויות תשובה</Text>
           {options.map((opt, index) => (
-            <View key={index} style={styles.optionRow}>
-              <TouchableOpacity
-                style={[
-                  styles.radioButton,
-                  correctAnswerIndex === index && styles.radioButtonActive,
-                ]}
-                onPress={() => setCorrectAnswerIndex(index)}
-              >
-                {correctAnswerIndex === index && (
-                  <Ionicons name="checkmark" size={14} color="#FFFFFF" />
-                )}
-              </TouchableOpacity>
-              <TextInput
-                style={styles.optionInput}
-                value={opt}
-                onChangeText={(val) => updateOption(index, val)}
-                placeholder={`אפשרות ${index + 1}`}
-                textAlign="right"
-                placeholderTextColor={theme.textSecondary + "60"}
-              />
+            <View key={index}>
+              <View style={styles.optionRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.radioButton,
+                    correctAnswerIndex === index && styles.radioButtonActive,
+                  ]}
+                  onPress={() => setCorrectAnswerIndex(index)}
+                >
+                  {correctAnswerIndex === index && (
+                    <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                  )}
+                </TouchableOpacity>
+                <TextInput
+                  style={styles.optionInput}
+                  value={opt}
+                  onChangeText={(val) => updateOption(index, val)}
+                  placeholder={`אפשרות ${index + 1}`}
+                  textAlign="right"
+                  placeholderTextColor={theme.textSecondary + "60"}
+                />
+              </View>
+              {opt.trim() ? (
+                <View style={styles.optionPreviewBox}>
+                  <MathText text={opt} fontSize={14} color={theme.textPrimary} />
+                </View>
+              ) : null}
             </View>
           ))}
           <Text style={styles.hintText}>
@@ -347,16 +361,22 @@ export default function QuestionFormScreen() {
           </Text>
 
           {/* Explanation */}
-          <Text style={styles.label}>הסבר הפתרון</Text>
+          <Text style={styles.label}>הסבר לפתרון</Text>
           <TextInput
             style={[styles.input, styles.multilineInput]}
             value={explanation}
             onChangeText={setExplanation}
-            placeholder="הסבר מפורט לפתרון..."
+            placeholder="הסבר הפתרון..."
             textAlign="right"
             multiline
             placeholderTextColor={theme.textSecondary + "80"}
           />
+          {explanation.trim() ? (
+            <View style={styles.previewBox}>
+              <Text style={styles.previewLabel}>תצוגה מקדימה (LaTeX):</Text>
+              <MathText text={explanation} fontSize={15} color={theme.textPrimary} />
+            </View>
+          ) : null}
 
           {/* Group ID */}
           <Text style={styles.label}>מזהה קבוצה (אופציונלי)</Text>
@@ -529,6 +549,31 @@ const getStyles = (theme: any) =>
       paddingVertical: 12,
       fontSize: 15,
       color: theme.textPrimary,
+    },
+    previewBox: {
+      backgroundColor: "#F8FAFC",
+      borderWidth: 1,
+      borderColor: "#E2E8F0",
+      borderRadius: 8,
+      padding: 10,
+      marginTop: 8,
+      marginBottom: 4,
+    },
+    previewLabel: {
+      fontSize: 12,
+      fontWeight: "bold" as const,
+      color: "#64748B",
+      marginBottom: 6,
+      textAlign: "right" as const,
+    },
+    optionPreviewBox: {
+      backgroundColor: "#F8FAFC",
+      borderWidth: 1,
+      borderColor: "#E2E8F0",
+      borderRadius: 8,
+      padding: 8,
+      marginBottom: 6,
+      marginLeft: 38,
     },
     hintText: {
       fontSize: 12,

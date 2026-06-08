@@ -63,6 +63,7 @@ export interface Question {
   imageUrl?: string | null;
   options: string[];
   correctAnswerIndex: number;
+  /** Solution/explanation text matched from the provided solution file. */
   explanation: string;
   difficulty: Difficulty;
   /** Links this question to a shared passage / question group. */

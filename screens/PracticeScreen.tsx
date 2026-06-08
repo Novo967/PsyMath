@@ -13,6 +13,7 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,6 +24,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContexts";
 import { auth, db } from "../firebaseConfig";
 import { Question, Subject } from "../types";
+import MathText from "../components/MathText";
 import { useRoute } from "@react-navigation/native";
 
 
@@ -226,22 +228,11 @@ export default function PracticeScreen() {
     return styles.optionButton;
   };
 
-  const getOptionTextStyle = (index: number) => {
-    if (!showFeedback && selectedAnswer === index)
-      return styles.selectedOptionText;
-    if (
-      showFeedback &&
-      selectedAnswer === index &&
-      selectedAnswer === currentQuestion.correctAnswerIndex
-    )
-      return styles.correctOptionText;
-    if (
-      showFeedback &&
-      selectedAnswer === index &&
-      selectedAnswer !== currentQuestion.correctAnswerIndex
-    )
-      return styles.wrongOptionText;
-    return styles.optionText;
+  const getOptionTextColor = (index: number) => {
+    if (!showFeedback && selectedAnswer === index) return theme.secondaryColor;
+    if (showFeedback && selectedAnswer === index && selectedAnswer === currentQuestion.correctAnswerIndex) return theme.successText;
+    if (showFeedback && selectedAnswer === index && selectedAnswer !== currentQuestion.correctAnswerIndex) return theme.errorText;
+    return theme.textSecondary;
   };
 
   return (
@@ -256,9 +247,18 @@ export default function PracticeScreen() {
         </View>
 
         <View style={styles.questionCard}>
-          <Text style={styles.questionText}>
-            {currentQuestion.questionText}
-          </Text>
+          {currentQuestion.imageUrl ? (
+            <Image 
+              source={{ uri: currentQuestion.imageUrl }} 
+              style={styles.diagramImage} 
+            />
+          ) : null}
+          <MathText 
+            text={currentQuestion.questionText} 
+            fontSize={20} 
+            color={theme.textPrimary} 
+            style={{ marginBottom: 20 }}
+          />
         </View>
 
         <View style={styles.optionsContainer}>
@@ -274,7 +274,13 @@ export default function PracticeScreen() {
               disabled={isCorrectAnswer}
               activeOpacity={0.7}
             >
-              <Text style={getOptionTextStyle(index)}>{opt}</Text>
+              <View pointerEvents="none">
+                <MathText 
+                  text={opt} 
+                  fontSize={16} 
+                  color={getOptionTextColor(index)} 
+                />
+              </View>
             </TouchableOpacity>
           ))}
         </View>
@@ -304,9 +310,12 @@ export default function PracticeScreen() {
 
             {showSolution && (
               <View style={styles.solutionBox}>
-                <Text style={styles.solutionBoxText}>
-                  {currentQuestion.explanation}
-                </Text>
+                <Text style={styles.solutionLabel}>הסבר הפתרון:</Text>
+                <MathText 
+                  text={currentQuestion.explanation || ""} 
+                  fontSize={16} 
+                  color={theme.textPrimary}
+                />
               </View>
             )}
           </View>
@@ -377,6 +386,13 @@ const getStyles = (theme: any) =>
       shadowRadius: 8,
       elevation: 2,
       marginBottom: 24,
+    },
+    diagramImage: {
+      width: "100%",
+      height: 200,
+      resizeMode: "contain",
+      marginBottom: 20,
+      borderRadius: 12,
     },
     questionText: {
       fontSize: 20,
@@ -504,4 +520,12 @@ const getStyles = (theme: any) =>
       color: theme.secondaryColor,
       lineHeight: 26,
     },
+    solutionLabel: {
+      fontSize: 15,
+      fontWeight: "700",
+      color: theme.secondaryColor,
+      textAlign: "right",
+      marginBottom: 6,
+    },
+
   });
