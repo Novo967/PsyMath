@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebaseConfig';
+import { processSimulationTopicStats } from '../utils/topicStatsUtils';
 
 // הגדרת טיפוס השאלה בהתאם למבנה שקיים בפיירבייס
 interface Question {
@@ -158,6 +159,9 @@ export default function SimulationScreen() {
 
       const userSimulationsRef = collection(db, 'users', auth.currentUser.uid, 'simulations');
       await addDoc(userSimulationsRef, simulationData);
+
+      // Update the topic stats dynamically for the entire simulation
+      await processSimulationTopicStats(auth.currentUser.uid, questions, answers);
 
       navigation.replace('SimulationResultsScreen', { 
         questions: questions,

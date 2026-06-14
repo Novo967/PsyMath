@@ -17,7 +17,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useRoute } from "@react-navigation/native";
 import { auth, db } from "../firebaseConfig";
+import { processSimulationTopicStats } from "../utils/topicStatsUtils";
 
 // Define the Question interface based on our JSON structure
 interface Question {
@@ -41,6 +43,7 @@ const shuffleArray = <T,>(array: T[]): T[] => {
 };
 
 export default function PracticeScreen() {
+  const route = useRoute<any>();
   const [userStatus, setUserStatus] = useState<{
     isPremium: boolean;
     solvedToday: number;
@@ -62,7 +65,11 @@ export default function PracticeScreen() {
     // Load both user limits and questions on mount
     const loadData = async () => {
       await checkUserLimit();
-      await fetchQuestions();
+      if (route.params?.sessionQuestions && route.params.sessionQuestions.length > 0) {
+        setQuestions(route.params.sessionQuestions);
+      } else {
+        await fetchQuestions();
+      }
       setLoading(false);
     };
 
@@ -156,6 +163,9 @@ export default function PracticeScreen() {
         }
 
         await updateDoc(userRef, updateData);
+
+        // Update the topic stats dynamically
+        await processSimulationTopicStats(auth.currentUser.uid, [currentQuestion], [selectedAnswer]);
 
         // עדכון סטייט מקומי
         setUserStatus((prev) =>

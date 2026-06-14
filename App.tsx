@@ -32,6 +32,7 @@ import SimulationResultsScreen from "./screens/SimulationResultsScreen";
 import SimulationScreen from "./screens/SimulationScreen";
 import StatisticsScreen from "./screens/StatisticsScreen";
 import StudyMaterialsScreen from "./screens/StudyMaterialsScreen";
+import WeaknessAnalyzerScreen from "./screens/WeaknessAnalyzerScreen";
 
 // עצירת הספלאש הנייטיבי מלהיעלם אוטומטית
 SplashScreen.preventAutoHideAsync();
@@ -46,6 +47,7 @@ export type RootStackParamList = {
   Login: undefined;
   SimulationResultsScreen: undefined;
   ChapterScreen: undefined;
+  WeaknessAnalyzer: { subject?: string } | undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -256,6 +258,11 @@ export default function App() {
               name="SimulationResultsScreen"
               component={SimulationResultsScreen}
               options={{ title: "תוצאות המבחן" }}
+            />
+            <Stack.Screen
+              name="WeaknessAnalyzer"
+              component={WeaknessAnalyzerScreen}
+              options={{ title: "תרגול חכם" }}
             />
           </>
         ) : (

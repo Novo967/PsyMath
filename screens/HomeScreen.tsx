@@ -19,7 +19,6 @@ import {
 import { RootStackParamList } from "../App";
 import { auth, db } from "../firebaseConfig";
 import FeedbackModal from "./FeedbackModal";
-
 const { width, height } = Dimensions.get("window");
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
@@ -279,6 +278,22 @@ export default function HomeScreen({ navigation }: Props) {
               <Text style={styles.cardDescription}>מעקב אחר קצב ההתקדמות</Text>
             </View>
           </TouchableOpacity>
+
+          {!isPremium && (
+            <TouchableOpacity
+              style={styles.card}
+              activeOpacity={0.7}
+              onPress={() => handleNavigation("WeaknessAnalyzer")}
+            >
+              <View style={[styles.cardIcon, { backgroundColor: "#EBF4FF" }]}>
+                <Ionicons name="rocket-outline" size={28} color="#2695D8" />
+              </View>
+              <View style={styles.cardTextContainer}>
+                <Text style={styles.cardTitle}>תרגול חכם ממוקד</Text>
+                <Text style={styles.cardDescription}>השלמת פערים לפי חולשות</Text>
+              </View>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
 
