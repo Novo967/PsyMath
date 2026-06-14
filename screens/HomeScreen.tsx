@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { RootStackParamList } from "../App";
 import { auth, db } from "../firebaseConfig";
+import FeedbackModal from "./FeedbackModal";
 
 const { width, height } = Dimensions.get("window");
 
@@ -34,6 +35,7 @@ export default function HomeScreen({ navigation }: Props) {
   const [isMenuVisible, setMenuVisible] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
   const [userName, setUserName] = useState(""); // <-- סטייט לשם המשתמש
+  const [isFeedbackModalVisible, setFeedbackModalVisible] = useState(false);
 
   // הגדרת משתנה האנימציה - התפריט מתחיל מחוץ למסך מצד ימין (ברוחב המסך)
   const slideAnim = useRef(new Animated.Value(width)).current;
@@ -183,6 +185,9 @@ export default function HomeScreen({ navigation }: Props) {
           console.log("Navigate to Premium logic");
           break;
         */
+        case "feedback":
+          setFeedbackModalVisible(true);
+          break;
         case "policy":
           Linking.openURL("https://novo967.github.io/Camuty-landing-page/");
           break;
@@ -310,6 +315,20 @@ export default function HomeScreen({ navigation }: Props) {
             </TouchableOpacity>
             */}
 
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => handleMenuPress("feedback")}
+            >
+              <Ionicons
+                name="chatbubble-ellipses-outline"
+                size={22}
+                color="#2695D8"
+              />
+              <Text style={styles.menuItemText}>מה נוכל לשפר?</Text>
+            </TouchableOpacity>
+
+
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => handleMenuPress("policy")}
@@ -349,6 +368,11 @@ export default function HomeScreen({ navigation }: Props) {
           </Animated.View>
         </TouchableOpacity>
       </Modal>
+
+      <FeedbackModal
+        visible={isFeedbackModalVisible}
+        onClose={() => setFeedbackModalVisible(false)}
+      />
     </SafeAreaView>
   );
 }
