@@ -80,8 +80,16 @@ export default function PracticeScreen() {
       const userRef = doc(db, "users", auth.currentUser.uid);
       const userSnap = await getDoc(userRef);
 
-      const customerInfo = await Purchases.getCustomerInfo();
-      const isUserPremium = !!customerInfo.entitlements.active["premium"];
+      let isUserPremium = false;
+      try {
+        const customerInfo = await Purchases.getCustomerInfo();
+        isUserPremium = !!customerInfo.entitlements.active["כמותי לפסיכומטרי Pro"];
+      } catch (rcError) {
+        console.warn("Failed to fetch from RevenueCat, using cached status", rcError);
+        if (userSnap.exists()) {
+          isUserPremium = !!userSnap.data().isPremium;
+        }
+      }
 
       if (userSnap.exists()) {
         const data = userSnap.data();
@@ -113,6 +121,10 @@ export default function PracticeScreen() {
       }
     } catch (error) {
       console.error("Error checking limit:", error);
+      
+      // If everything fails, prevent blocking if we can't load the status
+      // We set a fallback status to avoid 'userStatus is null' block
+      setUserStatus({ isPremium: false, solvedToday: 0, isTrialActive: false });
     }
   };
 
