@@ -279,21 +279,21 @@ export default function HomeScreen({ navigation }: Props) {
             </View>
           </TouchableOpacity>
 
-          {!isPremium && (
-            <TouchableOpacity
-              style={styles.card}
-              activeOpacity={0.7}
-              onPress={() => handleNavigation("WeaknessAnalyzer")}
-            >
-              <View style={[styles.cardIcon, { backgroundColor: "#EBF4FF" }]}>
-                <Ionicons name="rocket-outline" size={28} color="#2695D8" />
-              </View>
-              <View style={styles.cardTextContainer}>
-                <Text style={styles.cardTitle}>תרגול חכם ממוקד</Text>
-                <Text style={styles.cardDescription}>השלמת פערים לפי חולשות</Text>
-              </View>
-            </TouchableOpacity>
-          )}
+
+          <TouchableOpacity
+            style={styles.card}
+            activeOpacity={0.7}
+            onPress={() => handleNavigation("WeaknessAnalyzer")}
+          >
+            <View style={[styles.cardIcon, { backgroundColor: "#EBF4FF" }]}>
+              <Ionicons name="rocket-outline" size={28} color="#2695D8" />
+            </View>
+            <View style={styles.cardTextContainer}>
+              <Text style={styles.cardTitle}>תרגול חכם ממוקד</Text>
+              <Text style={styles.cardDescription}>השלמת פערים לפי חולשות</Text>
+            </View>
+          </TouchableOpacity>
+
         </View>
       </ScrollView>
 
