@@ -34,6 +34,7 @@ import SimulationResultsScreen from "./screens/SimulationResultsScreen";
 import SimulationScreen from "./screens/SimulationScreen";
 import StatisticsScreen from "./screens/StatisticsScreen";
 import StudyMaterialsScreen from "./screens/StudyMaterialsScreen";
+import WeaknessAnalyzerScreen from "./screens/WeaknessAnalyzerScreen";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -43,6 +44,7 @@ export type RootStackParamList = {
   Practice: undefined;
   Simulation: undefined;
   Statistics: undefined;
+  WeaknessAnalyzer: undefined;
   SignUp: undefined;
   Login: undefined;
   SimulationResultsScreen: undefined;
@@ -353,6 +355,7 @@ export default function App() {
             <Stack.Screen name="Simulation" component={SimulationScreen} />
             <Stack.Screen name="Statistics" component={StatisticsScreen} />
             <Stack.Screen name="ChapterScreen" component={ChapterScreen} />
+            <Stack.Screen name="WeaknessAnalyzer" component={WeaknessAnalyzerScreen} />
             <Stack.Screen
               name="SimulationResultsScreen"
               component={SimulationResultsScreen}

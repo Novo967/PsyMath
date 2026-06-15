@@ -1,4 +1,4 @@
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
   arrayUnion,
@@ -22,6 +22,7 @@ import {
 import Purchases from "react-native-purchases";
 import { RootStackParamList } from "../App";
 import { auth, db } from "../firebaseConfig";
+import { processSimulationTopicStats } from "../utils/topicStatsUtils";
 
 interface Question {
   id: string;
@@ -45,6 +46,7 @@ const shuffleArray = <T,>(array: T[]): T[] => {
 export default function PracticeScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<any>();
 
   // הרחבת הסטייט כדי שישמור גם האם תקופת הניסיון פעילה
   const [userStatus, setUserStatus] = useState<{
@@ -66,7 +68,11 @@ export default function PracticeScreen() {
   useEffect(() => {
     const loadData = async () => {
       await checkUserLimit();
-      await fetchQuestions();
+      if (route.params?.sessionQuestions && route.params.sessionQuestions.length > 0) {
+        setQuestions(route.params.sessionQuestions);
+      } else {
+        await fetchQuestions();
+      }
       setLoading(false);
     };
 
@@ -185,6 +191,9 @@ export default function PracticeScreen() {
         }
 
         await updateDoc(userRef, updateData);
+
+        // Update the topic stats dynamically
+        await processSimulationTopicStats(auth.currentUser.uid, [currentQuestion as any], [selectedAnswer]);
 
         setUserStatus((prev) =>
           prev ? { ...prev, solvedToday: prev.solvedToday + 1 } : null,
