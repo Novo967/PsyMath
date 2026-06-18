@@ -1,3 +1,4 @@
+import { useRoute } from "@react-navigation/native";
 import {
   arrayUnion,
   collection,
@@ -17,10 +18,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useRoute } from "@react-navigation/native";
 import { auth, db } from "../firebaseConfig";
-import { processSimulationTopicStats } from "../utils/topicStatsUtils";
 import { updateStreak } from "../utils/streakUtils";
+import { processSimulationTopicStats } from "../utils/topicStatsUtils";
 import StreakCelebration from "./StreakCelebration";
 
 // Define the Question interface based on our JSON structure
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
   },
   fixedBottomContainer: {
     paddingHorizontal: 20,
-    paddingBottom: 50, // מרווח נשימה בתחתית המסך
+    paddingBottom: 60, // מרווח נשימה בתחתית המסך
     paddingTop: 10,
     backgroundColor: "#9dbde9",
   },
