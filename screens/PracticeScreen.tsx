@@ -20,6 +20,8 @@ import {
 import { useRoute } from "@react-navigation/native";
 import { auth, db } from "../firebaseConfig";
 import { processSimulationTopicStats } from "../utils/topicStatsUtils";
+import { updateStreak } from "../utils/streakUtils";
+import StreakCelebration from "./StreakCelebration";
 
 // Define the Question interface based on our JSON structure
 interface Question {
@@ -60,6 +62,10 @@ export default function PracticeScreen() {
 
   // State to track if the current question has already been counted towards the daily quota and stats
   const [hasCountedInQuota, setHasCountedInQuota] = useState(false);
+
+  // Streak celebration state
+  const [showStreakCelebration, setShowStreakCelebration] = useState(false);
+  const [earnedStreakCount, setEarnedStreakCount] = useState(0);
 
   useEffect(() => {
     // Load both user limits and questions on mount
@@ -166,6 +172,13 @@ export default function PracticeScreen() {
 
         // Update the topic stats dynamically
         await processSimulationTopicStats(auth.currentUser.uid, [currentQuestion], [selectedAnswer]);
+
+        // Update the learning streak
+        const streakResult = await updateStreak(auth.currentUser.uid);
+        if (streakResult.justEarned) {
+          setEarnedStreakCount(streakResult.currentStreak);
+          setShowStreakCelebration(true);
+        }
 
         // עדכון סטייט מקומי
         setUserStatus((prev) =>
@@ -364,6 +377,12 @@ export default function PracticeScreen() {
           </TouchableOpacity>
         )}
       </View>
+
+      <StreakCelebration
+        visible={showStreakCelebration}
+        streakCount={earnedStreakCount}
+        onFinish={() => setShowStreakCelebration(false)}
+      />
     </View>
   );
 }

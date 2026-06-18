@@ -1,16 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { deleteUser, signOut } from "firebase/auth";
 import { deleteDoc, doc, getDoc } from "firebase/firestore";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Animated,
   Dimensions,
+  Easing,
   Linking,
   Modal,
   SafeAreaView,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -18,6 +19,7 @@ import {
 } from "react-native";
 import { RootStackParamList } from "../App";
 import { auth, db } from "../firebaseConfig";
+import { fetchCurrentStreak } from "../utils/streakUtils";
 import FeedbackModal from "./FeedbackModal";
 const { width, height } = Dimensions.get("window");
 
@@ -35,9 +37,12 @@ export default function HomeScreen({ navigation }: Props) {
   const [isPremium, setIsPremium] = useState(false);
   const [userName, setUserName] = useState(""); // <-- סטייט לשם המשתמש
   const [isFeedbackModalVisible, setFeedbackModalVisible] = useState(false);
+  const [currentStreak, setCurrentStreak] = useState(0);
 
   // הגדרת משתנה האנימציה - התפריט מתחיל מחוץ למסך מצד ימין (ברוחב המסך)
   const slideAnim = useRef(new Animated.Value(width)).current;
+  // אנימציית פעימה לאייקון הסטריק
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -58,6 +63,45 @@ export default function HomeScreen({ navigation }: Props) {
     };
     fetchUserData();
   }, []);
+
+  // Refresh streak every time the Home screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      const loadStreak = async () => {
+        if (auth.currentUser) {
+          const streak = await fetchCurrentStreak(auth.currentUser.uid);
+          setCurrentStreak(streak);
+        }
+      };
+      loadStreak();
+    }, [])
+  );
+
+  // Subtle pulse animation for the fire icon when streak > 0
+  useEffect(() => {
+    if (currentStreak > 0) {
+      const pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.15,
+            duration: 800,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 800,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulse.start();
+      return () => pulse.stop();
+    } else {
+      pulseAnim.setValue(1);
+    }
+  }, [currentStreak]);
 
   const handleNavigation = async (screenName: keyof RootStackParamList) => {
     if (!auth.currentUser) return;
@@ -203,11 +247,29 @@ export default function HomeScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.container}>
         <View style={styles.topBar}>
+          {/* Streak badge — top-left corner */}
+          <View style={[
+            styles.streakBadge,
+            currentStreak === 0 && styles.streakBadgeInactive,
+          ]}>
+            <Animated.Text
+              style={[
+                styles.streakFireIcon,
+                { transform: [{ scale: pulseAnim }] },
+              ]}
+            >
+              🔥
+            </Animated.Text>
+            <Text style={[
+              styles.streakNumber,
+              currentStreak === 0 && styles.streakNumberInactive,
+            ]}>
+              {currentStreak}
+            </Text>
+          </View>
+
           <TouchableOpacity onPress={openMenu} style={styles.settingsButton}>
             <Ionicons name="settings-outline" size={26} color="#162C5B" />
           </TouchableOpacity>
@@ -225,7 +287,7 @@ export default function HomeScreen({ navigation }: Props) {
             onPress={() => handleNavigation("StudyMaterials")}
           >
             <View style={styles.cardIcon}>
-              <Ionicons name="book-outline" size={28} color="#2695D8" />
+              <Ionicons name="book-outline" size={24} color="#2695D8" />
             </View>
             <View style={styles.cardTextContainer}>
               <Text style={styles.cardTitle}>חומרי לימוד</Text>
@@ -241,7 +303,7 @@ export default function HomeScreen({ navigation }: Props) {
             onPress={() => handleNavigation("Practice")}
           >
             <View style={styles.cardIcon}>
-              <Ionicons name="pencil-outline" size={28} color="#F3902E" />
+              <Ionicons name="pencil-outline" size={24} color="#F3902E" />
             </View>
             <View style={styles.cardTextContainer}>
               <Text style={styles.cardTitle}>תרגול חופשי</Text>
@@ -257,7 +319,7 @@ export default function HomeScreen({ navigation }: Props) {
             onPress={() => handleNavigation("Simulation")}
           >
             <View style={styles.cardIcon}>
-              <Ionicons name="timer-outline" size={28} color="#162C5B" />
+              <Ionicons name="timer-outline" size={24} color="#162C5B" />
             </View>
             <View style={styles.cardTextContainer}>
               <Text style={styles.cardTitle}>סימולציה מלאה</Text>
@@ -271,7 +333,7 @@ export default function HomeScreen({ navigation }: Props) {
             onPress={() => handleNavigation("Statistics")}
           >
             <View style={styles.cardIcon}>
-              <Ionicons name="stats-chart-outline" size={28} color="#4FB5ED" />
+              <Ionicons name="stats-chart-outline" size={24} color="#4FB5ED" />
             </View>
             <View style={styles.cardTextContainer}>
               <Text style={styles.cardTitle}>סטטיסטיקות</Text>
@@ -279,23 +341,21 @@ export default function HomeScreen({ navigation }: Props) {
             </View>
           </TouchableOpacity>
 
-
           <TouchableOpacity
             style={styles.card}
             activeOpacity={0.7}
             onPress={() => handleNavigation("WeaknessAnalyzer")}
           >
             <View style={[styles.cardIcon, { backgroundColor: "#EBF4FF" }]}>
-              <Ionicons name="rocket-outline" size={28} color="#2695D8" />
+              <Ionicons name="rocket-outline" size={24} color="#2695D8" />
             </View>
             <View style={styles.cardTextContainer}>
               <Text style={styles.cardTitle}>תרגול חכם ממוקד</Text>
               <Text style={styles.cardDescription}>השלמת פערים לפי חולשות</Text>
             </View>
           </TouchableOpacity>
-
         </View>
-      </ScrollView>
+      </View>
 
       <Modal
         visible={isMenuVisible}
@@ -395,27 +455,58 @@ export default function HomeScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#9dbde9" },
   container: {
-    flexGrow: 1,
+    flex: 1,
     paddingHorizontal: 24,
     paddingTop: 40,
-    paddingBottom: 30,
+    paddingBottom: 20,
   },
-  topBar: { alignItems: "flex-end", marginBottom: 10 },
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
+  },
   settingsButton: { padding: 8 },
-  headerContainer: { marginBottom: 40, alignItems: "flex-end" },
+
+  // --- Streak Badge Styles ---
+  streakBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 4,
+  },
+  streakBadgeInactive: {
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+  },
+  streakFireIcon: {
+    fontSize: 18,
+  },
+  streakNumber: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+  streakNumberInactive: {
+    color: "rgba(255, 255, 255, 0.5)",
+  },
+
+  headerContainer: { marginBottom: 24, alignItems: "flex-end" },
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: "800",
     color: "#ffffff",
-    marginBottom: 8,
+    marginBottom: 6,
     textAlign: "right",
   },
-  subtitle: { fontSize: 16, color: "#ffffff", textAlign: "right" },
-  cardsContainer: { gap: 16 },
+  subtitle: { fontSize: 15, color: "#ffffff", textAlign: "right" },
+  cardsContainer: { flex: 1, gap: 12 },
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 14,
+    padding: 16,
     flexDirection: "row-reverse",
     alignItems: "center",
     shadowColor: "#162C5B",
@@ -425,22 +516,22 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   cardIcon: {
-    width: 56,
-    height: 56,
+    width: 48,
+    height: 48,
     borderRadius: 12,
     backgroundColor: "#F0F4F8",
     justifyContent: "center",
     alignItems: "center",
-    marginLeft: 16,
+    marginLeft: 14,
   },
   cardTextContainer: { flex: 1, alignItems: "flex-end" },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "700",
     color: "#162C5B",
-    marginBottom: 4,
+    marginBottom: 2,
   },
-  cardDescription: { fontSize: 14, color: "#6B7C9D", textAlign: "right" },
+  cardDescription: { fontSize: 13, color: "#6B7C9D", textAlign: "right" },
 
   modalOverlay: {
     flex: 1,

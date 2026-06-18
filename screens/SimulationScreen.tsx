@@ -5,6 +5,8 @@ import { useNavigation } from '@react-navigation/native';
 import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebaseConfig';
 import { processSimulationTopicStats } from '../utils/topicStatsUtils';
+import { updateStreak } from '../utils/streakUtils';
+import StreakCelebration from './StreakCelebration';
 
 // הגדרת טיפוס השאלה בהתאם למבנה שקיים בפיירבייס
 interface Question {
@@ -40,6 +42,10 @@ export default function SimulationScreen() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(1);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const totalQuestions = 20;
+
+  // Streak celebration state
+  const [showStreakCelebration, setShowStreakCelebration] = useState(false);
+  const [earnedStreakCount, setEarnedStreakCount] = useState(0);
 
   // טעינת שאלות מהדאטה-בייס בתחילת הסימולציה
   useEffect(() => {
@@ -163,11 +169,27 @@ export default function SimulationScreen() {
       // Update the topic stats dynamically for the entire simulation
       await processSimulationTopicStats(auth.currentUser.uid, questions, answers);
 
-      navigation.replace('SimulationResultsScreen', { 
-        questions: questions,
-        userAnswers: answers,
-        score: score 
-      });
+      // Update the learning streak — count all answered questions
+      const answeredCount = answers.filter(a => a !== null).length;
+      const streakResult = await updateStreak(auth.currentUser.uid, answeredCount);
+
+      const navigateToResults = () => {
+        navigation.replace('SimulationResultsScreen', { 
+          questions: questions,
+          userAnswers: answers,
+          score: score 
+        });
+      };
+
+      // If streak was just earned, show celebration before navigating
+      if (streakResult.justEarned) {
+        setEarnedStreakCount(streakResult.currentStreak);
+        setShowStreakCelebration(true);
+        // The celebration auto-dismisses after ~2.2s, then navigate
+        setTimeout(navigateToResults, 2500);
+      } else {
+        navigateToResults();
+      }
 
     } catch (error) {
       console.error("Error saving simulation:", error);
@@ -235,6 +257,7 @@ export default function SimulationScreen() {
   const isLastQuestion = currentQuestionIndex === questions.length;
 
   return (
+    <>
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         
@@ -326,6 +349,13 @@ export default function SimulationScreen() {
 
       </View>
     </SafeAreaView>
+
+    <StreakCelebration
+      visible={showStreakCelebration}
+      streakCount={earnedStreakCount}
+      onFinish={() => setShowStreakCelebration(false)}
+    />
+    </>
   );
 }
 
