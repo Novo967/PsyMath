@@ -17,6 +17,8 @@ import {
   View,
 } from "react-native";
 import { auth, db } from "./firebaseConfig";
+import { registerForPushNotifications } from "./utils/notificationUtils";
+import * as Notifications from "expo-notifications";
 
 // Video & Splash imports
 import { AVPlaybackStatus, ResizeMode, Video } from "expo-av";
@@ -119,6 +121,8 @@ export default function App() {
           setUser(null);
         } else {
           setUser(currentUser);
+          // Register for push notifications after confirming authentication
+          registerForPushNotifications(currentUser.uid);
         }
       } else {
         setUser(null);
@@ -127,6 +131,17 @@ export default function App() {
     });
 
     return unsubscribe;
+  }, []);
+
+  // Set up notification response listener (when user taps a notification)
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        console.log("Notification tapped:", response.notification.request.content);
+      }
+    );
+
+    return () => subscription.remove();
   }, []);
 
   // ניהול מצב הנגן של הוידאו
