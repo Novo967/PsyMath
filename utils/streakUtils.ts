@@ -52,10 +52,72 @@ export interface StreakUpdateResult {
  *   new count. Credits streak if threshold is reached.
  * - Older than yesterday: resets currentStreak to 0, resets questionsAnsweredToday.
  *   Credits streak if threshold is reached.
+/**
+ * Calculates the new streak purely based on existing local state.
+ * This removes redundant Firestore reads/writes. The caller is responsible
+ * for batching the updatedStreakData into a single database write.
  *
- * @param userId - Firebase Auth UID
+ * @param existing - The current streak data from local state
  * @param answeredCount - Number of questions answered in this action (default 1)
- * @returns Object with currentStreak and whether the streak was just earned
+ * @returns Object with updatedStreakData and the StreakUpdateResult
+ */
+export const calculateNewStreak = (
+  existing: StreakData | null,
+  answeredCount: number = 1
+): { updatedStreakData: StreakData; result: StreakUpdateResult } => {
+  const today = getTodayDateString();
+
+  // Read existing streak data (with defaults for first-time users)
+  const current: StreakData = existing || {
+    currentStreak: 0,
+    lastStreakDate: "",
+    questionsAnsweredToday: 0,
+    lastActivityDate: "",
+  };
+
+  let newStreak = current.currentStreak;
+  let newQuestionsToday = current.questionsAnsweredToday;
+  let newLastStreakDate = current.lastStreakDate;
+  const alreadyCreditedToday = isSameDay(current.lastStreakDate, today);
+
+  if (isSameDay(current.lastActivityDate, today)) {
+    // --- SAME DAY: just add to today's count ---
+    newQuestionsToday += answeredCount;
+  } else if (isYesterday(current.lastActivityDate, today)) {
+    // --- YESTERDAY: streak is alive, start fresh count for today ---
+    newQuestionsToday = answeredCount;
+  } else {
+    // --- GAP > 1 day (or first ever activity): reset streak ---
+    newStreak = 0;
+    newQuestionsToday = answeredCount;
+    newLastStreakDate = ""; // reset so we can credit today if threshold met
+  }
+
+  // Credit the streak if threshold reached and not already credited today
+  let justEarned = false;
+  if (newQuestionsToday >= 5 && !alreadyCreditedToday) {
+    newStreak += 1;
+    newLastStreakDate = today;
+    justEarned = true;
+  }
+
+  const updatedStreakData: StreakData = {
+    currentStreak: newStreak,
+    lastStreakDate: newLastStreakDate,
+    questionsAnsweredToday: newQuestionsToday,
+    lastActivityDate: today,
+  };
+
+  return {
+    updatedStreakData,
+    result: { currentStreak: newStreak, justEarned },
+  };
+};
+
+/**
+ * Legacy wrapper: Computes the new streak and writes it to Firestore immediately.
+ * Retained for components like SimulationScreen that haven't been refactored
+ * for optimistic UI yet.
  */
 export const updateStreak = async (
   userId: string,
@@ -70,9 +132,8 @@ export const updateStreak = async (
     if (!userSnap.exists()) return { currentStreak: 0, justEarned: false };
 
     const data = userSnap.data();
-    const today = getTodayDateString();
-
-    // Read existing streak data (with defaults for first-time users)
+    
+    // Convert existing DB data to StreakData format
     const existing: StreakData = {
       currentStreak: data.streakData?.currentStreak ?? 0,
       lastStreakDate: data.streakData?.lastStreakDate ?? "",
@@ -80,45 +141,13 @@ export const updateStreak = async (
       lastActivityDate: data.streakData?.lastActivityDate ?? "",
     };
 
-    let newStreak = existing.currentStreak;
-    let newQuestionsToday = existing.questionsAnsweredToday;
-    let newLastStreakDate = existing.lastStreakDate;
-    const alreadyCreditedToday = isSameDay(existing.lastStreakDate, today);
-
-    if (isSameDay(existing.lastActivityDate, today)) {
-      // --- SAME DAY: just add to today's count ---
-      newQuestionsToday += answeredCount;
-    } else if (isYesterday(existing.lastActivityDate, today)) {
-      // --- YESTERDAY: streak is alive, start fresh count for today ---
-      newQuestionsToday = answeredCount;
-    } else {
-      // --- GAP > 1 day (or first ever activity): reset streak ---
-      newStreak = 0;
-      newQuestionsToday = answeredCount;
-      newLastStreakDate = ""; // reset so we can credit today if threshold met
-    }
-
-    // Credit the streak if threshold reached and not already credited today
-    let justEarned = false;
-    if (newQuestionsToday >= 5 && !alreadyCreditedToday) {
-      newStreak += 1;
-      newLastStreakDate = today;
-      justEarned = true;
-    }
-
-    // Write back to Firestore
-    const updatedStreakData: StreakData = {
-      currentStreak: newStreak,
-      lastStreakDate: newLastStreakDate,
-      questionsAnsweredToday: newQuestionsToday,
-      lastActivityDate: today,
-    };
+    const { updatedStreakData, result } = calculateNewStreak(existing, answeredCount);
 
     await updateDoc(userRef, {
       "streakData": updatedStreakData,
     });
 
-    return { currentStreak: newStreak, justEarned };
+    return result;
   } catch (error) {
     console.error("Error updating streak:", error);
     return { currentStreak: 0, justEarned: false };

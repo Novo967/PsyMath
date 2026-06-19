@@ -19,7 +19,7 @@ import {
   View,
 } from "react-native";
 import { auth, db } from "../firebaseConfig";
-import { updateStreak } from "../utils/streakUtils";
+import { StreakData, calculateNewStreak } from "../utils/streakUtils";
 import { processSimulationTopicStats } from "../utils/topicStatsUtils";
 import StreakCelebration from "./StreakCelebration";
 
@@ -49,6 +49,7 @@ export default function PracticeScreen() {
   const [userStatus, setUserStatus] = useState<{
     isPremium: boolean;
     solvedToday: number;
+    streakData: StreakData | null;
   } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -107,7 +108,11 @@ export default function PracticeScreen() {
           solvedToday = 0;
         }
 
-        setUserStatus({ isPremium: data.isPremium, solvedToday });
+        setUserStatus({ 
+          isPremium: data.isPremium, 
+          solvedToday,
+          streakData: data.streakData || null 
+        });
       }
     } catch (error) {
       console.error("Error checking limit:", error);
@@ -151,47 +156,58 @@ export default function PracticeScreen() {
       }
       ------------------------------------------------------------- */
 
-      // עדכון הסטטיסטיקות והמכסות בפיירבייס
-      try {
-        const userRef = doc(db, "users", auth.currentUser.uid);
+      // 1. Optimistic UI Updates: Execute local state changes instantly
+      setUserStatus((prev) =>
+        prev ? { ...prev, solvedToday: prev.solvedToday + 1 } : null,
+      );
+      setHasCountedInQuota(true);
+      setShowFeedback(true); // Instant UI feedback!
 
-        // אובייקט העדכון הבסיסי
-        const updateData: any = {
-          questionsSolvedToday: increment(1),
-          totalQuestionsPracticed: increment(1),
-          practicedQuestions: arrayUnion(currentQuestion.id),
-          lastQuestionDate: new Date().toISOString(),
-        };
+      // Calculate the new streak synchronously using local state
+      const { updatedStreakData, result: streakResult } = calculateNewStreak(userStatus.streakData);
 
-        // אם הוא צדק בניסיון הראשון, נוסיף לעדכון גם את מונה התשובות הנכונות
-        if (isCorrect) {
-          updateData.totalCorrectAnswers = increment(1);
-        }
-
-        await updateDoc(userRef, updateData);
-
-        // Update the topic stats dynamically
-        await processSimulationTopicStats(auth.currentUser.uid, [currentQuestion], [selectedAnswer]);
-
-        // Update the learning streak
-        const streakResult = await updateStreak(auth.currentUser.uid);
-        if (streakResult.justEarned) {
-          setEarnedStreakCount(streakResult.currentStreak);
-          setShowStreakCelebration(true);
-        }
-
-        // עדכון סטייט מקומי
-        setUserStatus((prev) =>
-          prev ? { ...prev, solvedToday: prev.solvedToday + 1 } : null,
-        );
-        setHasCountedInQuota(true);
-      } catch (error) {
-        console.error("Error updating stats:", error);
+      if (streakResult.justEarned) {
+        setEarnedStreakCount(streakResult.currentStreak);
+        setShowStreakCelebration(true);
       }
-    }
+      
+      // Update local state with the new streak so subsequent checks are accurate
+      setUserStatus((prev) => 
+        prev ? { ...prev, streakData: updatedStreakData } : null
+      );
 
-    // הצגת המשוב למשתמש
-    setShowFeedback(true);
+      // 2. Background Updates: Fire off database operations without blocking
+      const backgroundUpdates = async () => {
+        try {
+          const userRef = doc(db, "users", auth.currentUser!.uid);
+
+          // Batched Update: Quotas + StreakData written simultaneously
+          const updateData: any = {
+            questionsSolvedToday: increment(1),
+            totalQuestionsPracticed: increment(1),
+            practicedQuestions: arrayUnion(currentQuestion.id),
+            lastQuestionDate: new Date().toISOString(),
+            streakData: updatedStreakData, // Batched write
+          };
+
+          if (isCorrect) {
+            updateData.totalCorrectAnswers = increment(1);
+          }
+
+          // Await these in the background thread (don't block handleCheck)
+          await updateDoc(userRef, updateData);
+          await processSimulationTopicStats(auth.currentUser!.uid, [currentQuestion], [selectedAnswer]);
+        } catch (error) {
+          console.error("Error updating stats in background:", error);
+        }
+      };
+
+      // Fire and forget
+      backgroundUpdates();
+    } else {
+      // If already counted in quota, just show feedback
+      setShowFeedback(true);
+    }
   };
 
   const handleNextQuestion = () => {

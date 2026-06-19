@@ -121,8 +121,6 @@ export default function App() {
           setUser(null);
         } else {
           setUser(currentUser);
-          // Register for push notifications after confirming authentication
-          registerForPushNotifications(currentUser.uid);
         }
       } else {
         setUser(null);
@@ -132,6 +130,14 @@ export default function App() {
 
     return unsubscribe;
   }, []);
+
+  // Performance Optimization: Push registration moved out of onAuthStateChanged 
+  // to avoid redundant fetches on token refreshes.
+  useEffect(() => {
+    if (user?.uid) {
+      registerForPushNotifications(user.uid);
+    }
+  }, [user?.uid]);
 
   // Set up notification response listener (when user taps a notification)
   useEffect(() => {
