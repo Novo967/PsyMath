@@ -267,7 +267,7 @@ export default function App() {
       >
         {user ? (
           <>
-            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
             <Stack.Screen
               name="StudyMaterials"
               component={StudyMaterialsScreen}

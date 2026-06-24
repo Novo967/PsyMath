@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { BlurView } from "expo-blur";
 import { deleteUser, signOut } from "firebase/auth";
 import { deleteDoc, doc, getDoc } from "firebase/firestore";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -11,17 +12,17 @@ import {
   Easing,
   Linking,
   Modal,
+  Platform,
   SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { BlurView } from "expo-blur";
 import { RootStackParamList } from "../App";
+import AnimatedBackground from "../components/AnimatedBackground";
 import { auth, db } from "../firebaseConfig";
 import { fetchCurrentStreak } from "../utils/streakUtils";
-import AnimatedBackground from "../components/AnimatedBackground";
 import FeedbackModal from "./FeedbackModal";
 const { width, height } = Dimensions.get("window");
 
@@ -255,119 +256,119 @@ export default function HomeScreen({ navigation }: Props) {
           <View style={styles.topBar}>
             {/* Streak badge — top-left corner */}
             <BlurView intensity={60} tint="light" style={[
-            styles.streakBadge,
-            currentStreak === 0 && styles.streakBadgeInactive,
-          ]}>
-            {currentStreak > 0 ? (
-              <Animated.Text
-                style={[
-                  styles.streakFireIcon,
-                  { transform: [{ scale: pulseAnim }] },
-                ]}
-              >
-                🔥
-              </Animated.Text>
-            ) : (
-              <Ionicons name="flame-outline" size={18} color="#B0B8C9" />
-            )}
-            <Text style={[
-              styles.streakNumber,
-              currentStreak === 0 && styles.streakNumberInactive,
+              styles.streakBadge,
+              currentStreak === 0 && styles.streakBadgeInactive,
             ]}>
-              {currentStreak}
+              {currentStreak > 0 ? (
+                <Animated.Text
+                  style={[
+                    styles.streakFireIcon,
+                    { transform: [{ scale: pulseAnim }] },
+                  ]}
+                >
+                  🔥
+                </Animated.Text>
+              ) : (
+                <Ionicons name="flame-outline" size={18} color="#B0B8C9" />
+              )}
+              <Text style={[
+                styles.streakNumber,
+                currentStreak === 0 && styles.streakNumberInactive,
+              ]}>
+                {currentStreak}
               </Text>
             </BlurView>
 
-          <TouchableOpacity onPress={openMenu} style={styles.settingsButton}>
-            <Ionicons name="settings-outline" size={26} color="#1A1F36" />
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity onPress={openMenu} style={styles.settingsButton}>
+              <Ionicons name="settings-outline" size={26} color="#1A1F36" />
+            </TouchableOpacity>
+          </View>
 
-        <View style={styles.headerContainer}>
-          <Text style={styles.title}>הכנה כמותית לפסיכומטרי</Text>
-          <Text style={styles.subtitle}>שלום {userName}, מה נלמד היום?</Text>
-        </View>
+          <View style={styles.headerContainer}>
+            <Text style={styles.title}>הכנה כמותית לפסיכומטרי</Text>
+            <Text style={styles.subtitle}>שלום {userName}, מה נלמד היום?</Text>
+          </View>
 
-        <View style={styles.cardsContainer}>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => handleNavigation("StudyMaterials")}
-          >
-            <BlurView intensity={75} tint="light" style={styles.card}>
-              <View style={styles.cardIcon}>
-                <Ionicons name="book-outline" size={24} color="#3366FF" />
-              </View>
-            <View style={styles.cardTextContainer}>
-              <Text style={styles.cardTitle}>חומרי לימוד</Text>
-              <Text style={styles.cardDescription}>
-                למידה מסודרת לפי נושאים
-              </Text>
-            </View>
-            </BlurView>
-          </TouchableOpacity>
+          <View style={styles.cardsContainer}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => handleNavigation("StudyMaterials")}
+            >
+              <BlurView intensity={75} tint="light" style={styles.card}>
+                <View style={styles.cardIcon}>
+                  <Ionicons name="book-outline" size={24} color="#3366FF" />
+                </View>
+                <View style={styles.cardTextContainer}>
+                  <Text style={styles.cardTitle}>חומרי לימוד</Text>
+                  <Text style={styles.cardDescription}>
+                    למידה מסודרת לפי נושאים
+                  </Text>
+                </View>
+              </BlurView>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => handleNavigation("Practice")}
-          >
-            <BlurView intensity={75} tint="light" style={styles.card}>
-              <View style={styles.cardIcon}>
-                <Ionicons name="pencil-outline" size={24} color="#FF6D00" />
-              </View>
-            <View style={styles.cardTextContainer}>
-              <Text style={styles.cardTitle}>תרגול חופשי</Text>
-              <Text style={styles.cardDescription}>
-                אימון יומי לשיפור המיומנות
-              </Text>
-            </View>
-            </BlurView>
-          </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => handleNavigation("Practice")}
+            >
+              <BlurView intensity={75} tint="light" style={styles.card}>
+                <View style={styles.cardIcon}>
+                  <Ionicons name="pencil-outline" size={24} color="#FF6D00" />
+                </View>
+                <View style={styles.cardTextContainer}>
+                  <Text style={styles.cardTitle}>תרגול חופשי</Text>
+                  <Text style={styles.cardDescription}>
+                    אימון יומי לשיפור המיומנות
+                  </Text>
+                </View>
+              </BlurView>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => handleNavigation("Simulation")}
-          >
-            <BlurView intensity={75} tint="light" style={styles.card}>
-              <View style={styles.cardIcon}>
-                <Ionicons name="timer-outline" size={24} color="#7C3AED" />
-              </View>
-            <View style={styles.cardTextContainer}>
-              <Text style={styles.cardTitle}>סימולציה מלאה</Text>
-              <Text style={styles.cardDescription}>מבחן זמן בתנאי אמת</Text>
-            </View>
-            </BlurView>
-          </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => handleNavigation("Simulation")}
+            >
+              <BlurView intensity={75} tint="light" style={styles.card}>
+                <View style={styles.cardIcon}>
+                  <Ionicons name="timer-outline" size={24} color="#7C3AED" />
+                </View>
+                <View style={styles.cardTextContainer}>
+                  <Text style={styles.cardTitle}>סימולציה מלאה</Text>
+                  <Text style={styles.cardDescription}>מבחן זמן בתנאי אמת</Text>
+                </View>
+              </BlurView>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => handleNavigation("Statistics")}
-          >
-            <BlurView intensity={75} tint="light" style={styles.card}>
-              <View style={styles.cardIcon}>
-                <Ionicons name="stats-chart-outline" size={24} color="#00BCD4" />
-              </View>
-            <View style={styles.cardTextContainer}>
-              <Text style={styles.cardTitle}>סטטיסטיקות</Text>
-              <Text style={styles.cardDescription}>מעקב אחר קצב ההתקדמות</Text>
-            </View>
-            </BlurView>
-          </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => handleNavigation("Statistics")}
+            >
+              <BlurView intensity={75} tint="light" style={styles.card}>
+                <View style={styles.cardIcon}>
+                  <Ionicons name="stats-chart-outline" size={24} color="#00BCD4" />
+                </View>
+                <View style={styles.cardTextContainer}>
+                  <Text style={styles.cardTitle}>סטטיסטיקות</Text>
+                  <Text style={styles.cardDescription}>מעקב אחר קצב ההתקדמות</Text>
+                </View>
+              </BlurView>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => handleNavigation("WeaknessAnalyzer")}
-          >
-            <BlurView intensity={75} tint="light" style={styles.card}>
-            <View style={[styles.cardIcon, { backgroundColor: "#EEF2FF" }]}>
-              <Ionicons name="rocket-outline" size={24} color="#3366FF" />
-            </View>
-            <View style={styles.cardTextContainer}>
-              <Text style={styles.cardTitle}>תרגול חכם ממוקד</Text>
-              <Text style={styles.cardDescription}>השלמת פערים לפי חולשות</Text>
-            </View>
-            </BlurView>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => handleNavigation("WeaknessAnalyzer")}
+            >
+              <BlurView intensity={75} tint="light" style={styles.card}>
+                <View style={[styles.cardIcon, { backgroundColor: "#EEF2FF" }]}>
+                  <Ionicons name="rocket-outline" size={24} color="#3366FF" />
+                </View>
+                <View style={styles.cardTextContainer}>
+                  <Text style={styles.cardTitle}>תרגול חכם ממוקד</Text>
+                  <Text style={styles.cardDescription}>השלמת פערים לפי חולשות</Text>
+                </View>
+              </BlurView>
+            </TouchableOpacity>
+          </View>
         </View>
       </SafeAreaView>
 
@@ -486,7 +487,7 @@ const styles = StyleSheet.create({
   streakBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.45)",
+    backgroundColor: Platform.select({ ios: "transparent", android: "rgba(255, 255, 255, 0.45)" }),
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
@@ -525,7 +526,7 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row-reverse",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.5)",
+    backgroundColor: Platform.select({ ios: "transparent", android: "rgba(255, 255, 255, 0.5)" }),
     borderRadius: 20,
     padding: 20,
     borderWidth: 1,
