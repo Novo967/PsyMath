@@ -17,9 +17,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { BlurView } from "expo-blur";
 import { RootStackParamList } from "../App";
 import { auth, db } from "../firebaseConfig";
 import { fetchCurrentStreak } from "../utils/streakUtils";
+import AnimatedBackground from "../components/AnimatedBackground";
 import FeedbackModal from "./FeedbackModal";
 const { width, height } = Dimensions.get("window");
 
@@ -246,11 +248,13 @@ export default function HomeScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.topBar}>
-          {/* Streak badge — top-left corner */}
-          <View style={[
+    <View style={{ flex: 1 }}>
+      <AnimatedBackground />
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <View style={styles.topBar}>
+            {/* Streak badge — top-left corner */}
+            <BlurView intensity={60} tint="light" style={[
             styles.streakBadge,
             currentStreak === 0 && styles.streakBadgeInactive,
           ]}>
@@ -271,8 +275,8 @@ export default function HomeScreen({ navigation }: Props) {
               currentStreak === 0 && styles.streakNumberInactive,
             ]}>
               {currentStreak}
-            </Text>
-          </View>
+              </Text>
+            </BlurView>
 
           <TouchableOpacity onPress={openMenu} style={styles.settingsButton}>
             <Ionicons name="settings-outline" size={26} color="#1A1F36" />
@@ -286,70 +290,74 @@ export default function HomeScreen({ navigation }: Props) {
 
         <View style={styles.cardsContainer}>
           <TouchableOpacity
-            style={styles.card}
             activeOpacity={0.7}
             onPress={() => handleNavigation("StudyMaterials")}
           >
-            <View style={styles.cardIcon}>
-              <Ionicons name="book-outline" size={24} color="#3366FF" />
-            </View>
+            <BlurView intensity={75} tint="light" style={styles.card}>
+              <View style={styles.cardIcon}>
+                <Ionicons name="book-outline" size={24} color="#3366FF" />
+              </View>
             <View style={styles.cardTextContainer}>
               <Text style={styles.cardTitle}>חומרי לימוד</Text>
               <Text style={styles.cardDescription}>
                 למידה מסודרת לפי נושאים
               </Text>
             </View>
+            </BlurView>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.card}
             activeOpacity={0.7}
             onPress={() => handleNavigation("Practice")}
           >
-            <View style={styles.cardIcon}>
-              <Ionicons name="pencil-outline" size={24} color="#FF6D00" />
-            </View>
+            <BlurView intensity={75} tint="light" style={styles.card}>
+              <View style={styles.cardIcon}>
+                <Ionicons name="pencil-outline" size={24} color="#FF6D00" />
+              </View>
             <View style={styles.cardTextContainer}>
               <Text style={styles.cardTitle}>תרגול חופשי</Text>
               <Text style={styles.cardDescription}>
                 אימון יומי לשיפור המיומנות
               </Text>
             </View>
+            </BlurView>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.card}
             activeOpacity={0.7}
             onPress={() => handleNavigation("Simulation")}
           >
-            <View style={styles.cardIcon}>
-              <Ionicons name="timer-outline" size={24} color="#7C3AED" />
-            </View>
+            <BlurView intensity={75} tint="light" style={styles.card}>
+              <View style={styles.cardIcon}>
+                <Ionicons name="timer-outline" size={24} color="#7C3AED" />
+              </View>
             <View style={styles.cardTextContainer}>
               <Text style={styles.cardTitle}>סימולציה מלאה</Text>
               <Text style={styles.cardDescription}>מבחן זמן בתנאי אמת</Text>
             </View>
+            </BlurView>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.card}
             activeOpacity={0.7}
             onPress={() => handleNavigation("Statistics")}
           >
-            <View style={styles.cardIcon}>
-              <Ionicons name="stats-chart-outline" size={24} color="#00BCD4" />
-            </View>
+            <BlurView intensity={75} tint="light" style={styles.card}>
+              <View style={styles.cardIcon}>
+                <Ionicons name="stats-chart-outline" size={24} color="#00BCD4" />
+              </View>
             <View style={styles.cardTextContainer}>
               <Text style={styles.cardTitle}>סטטיסטיקות</Text>
               <Text style={styles.cardDescription}>מעקב אחר קצב ההתקדמות</Text>
             </View>
+            </BlurView>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.card}
             activeOpacity={0.7}
             onPress={() => handleNavigation("WeaknessAnalyzer")}
           >
+            <BlurView intensity={75} tint="light" style={styles.card}>
             <View style={[styles.cardIcon, { backgroundColor: "#EEF2FF" }]}>
               <Ionicons name="rocket-outline" size={24} color="#3366FF" />
             </View>
@@ -357,9 +365,11 @@ export default function HomeScreen({ navigation }: Props) {
               <Text style={styles.cardTitle}>תרגול חכם ממוקד</Text>
               <Text style={styles.cardDescription}>השלמת פערים לפי חולשות</Text>
             </View>
+            </BlurView>
           </TouchableOpacity>
         </View>
-      </View>
+        </View>
+      </SafeAreaView>
 
       <Modal
         visible={isMenuVisible}
@@ -452,12 +462,12 @@ export default function HomeScreen({ navigation }: Props) {
         visible={isFeedbackModalVisible}
         onClose={() => setFeedbackModalVisible(false)}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#F0F4FF" },
+  safeArea: { flex: 1, backgroundColor: "transparent" },
   container: {
     flex: 1,
     paddingHorizontal: 24,
@@ -476,10 +486,13 @@ const styles = StyleSheet.create({
   streakBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(51, 102, 255, 0.1)",
+    backgroundColor: "rgba(255, 255, 255, 0.45)",
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.6)",
+    overflow: "hidden",
     gap: 4,
   },
   streakBadgeInactive: {
@@ -506,18 +519,18 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
   subtitle: { fontSize: 15, color: "#6C7693", textAlign: "right" },
-  cardsContainer: { flex: 1, gap: 12 },
+
+  // --- Cards Styles ---
+  cardsContainer: { gap: 16 },
   card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    padding: 16,
     flexDirection: "row-reverse",
     alignItems: "center",
-    shadowColor: "#3366FF",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 3,
+    backgroundColor: "rgba(255, 255, 255, 0.5)",
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.8)",
+    overflow: "hidden",
   },
   cardIcon: {
     width: 48,
