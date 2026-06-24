@@ -20,15 +20,15 @@ interface WeakTopicDisplay extends TopicStats {
 }
 
 const colors = {
-  backgroundColor: "#9dbde9",
+  backgroundColor: "#F0F4FF",
   cardBackground: "#FFFFFF",
-  primaryColor: "#2695D8",
-  textPrimary: "#162C5B",
-  textSecondary: "#6B7C9D",
+  primaryColor: "#3366FF",
+  textPrimary: "#1A1F36",
+  textSecondary: "#6C7693",
   textLight: "#FFFFFF",
-  successBorder: "#48BB78",
-  errorBackground: "#FED7D7",
-  errorBorder: "#E53E3E"
+  successBorder: "#00D68F",
+  errorBackground: "#FFE0E8",
+  errorBorder: "#FF3D71"
 };
 
 export default function WeaknessAnalyzerScreen() {
@@ -240,13 +240,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "800",
-    color: colors.textLight, // Usually titles on this background are white
+    color: colors.textPrimary, // Title now dark on light bg
     marginTop: 10,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: colors.textLight,
+    color: colors.textSecondary,
     textAlign: "center",
     lineHeight: 22,
     paddingHorizontal: 10,
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
-    shadowColor: "#162C5B",
+    shadowColor: "#3366FF",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.04,
     shadowRadius: 12,
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 12,
-    backgroundColor: "#EBF4FF",
+    backgroundColor: "#EEF2FF",
     borderRadius: 10,
   },
   studyButtonText: {

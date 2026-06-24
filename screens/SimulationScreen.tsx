@@ -241,7 +241,7 @@ export default function SimulationScreen() {
   if (isLoading || isSubmitting) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="large" color="#3366FF" />
         <Text style={{ marginTop: 20, fontSize: 18, color: '#4A5568' }}>
           {isSubmitting ? 'מגיש את המבחן...' : 'בונה לך סימולציה...'}
         </Text>
@@ -264,7 +264,7 @@ export default function SimulationScreen() {
         {/* פאנל עליון */}
         <View style={styles.topStatus}>
           <View style={styles.timeContainer}>
-            <Ionicons name="timer-outline" size={20} color={timeLeft < 60 ? '#E53E3E' : '#4A5568'} />
+            <Ionicons name="timer-outline" size={20} color={timeLeft < 60 ? '#FF3D71' : '#4A5568'} />
             <Text style={[styles.timerText, timeLeft < 60 && styles.timerWarning]}>
               {formatTime(timeLeft)}
             </Text>
@@ -321,7 +321,7 @@ export default function SimulationScreen() {
               onPress={handlePrev}
               disabled={currentQuestionIndex === 1}
             >
-              <Ionicons name="chevron-forward" size={20} color="#4A90E2" style={{ marginRight: 4 }} />
+              <Ionicons name="chevron-forward" size={20} color="#3366FF" style={{ marginRight: 4 }} />
               <Text style={[styles.actionButtonText, styles.prevButtonText]}>הקודם</Text>
             </TouchableOpacity>
 
@@ -329,7 +329,7 @@ export default function SimulationScreen() {
             <TouchableOpacity 
               style={[
                 styles.actionButton, 
-                isLastQuestion && { backgroundColor: '#48BB78', shadowColor: '#48BB78' } 
+                isLastQuestion && { backgroundColor: '#00D68F', shadowColor: '#00D68F' } 
               ]} 
               activeOpacity={0.8}
               onPress={isLastQuestion ? finishSimulation : handleNext}
@@ -360,33 +360,33 @@ export default function SimulationScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F8F9FA' },
+  safeArea: { flex: 1, backgroundColor: '#F5F7FB' },
   container: { flex: 1, paddingHorizontal: 20, paddingTop: 40 },
   topStatus: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15 },
   timeContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
   timerText: { fontSize: 16, fontWeight: '700', color: '#4A5568', marginLeft: 6 },
-  timerWarning: { color: '#E53E3E' },
-  progressText: { fontSize: 15, fontWeight: '600', color: '#718096' },
-  progressBarBackground: { height: 6, backgroundColor: '#E2E8F0', borderRadius: 3, marginBottom: 15, overflow: 'hidden', flexDirection: 'row-reverse' },
-  progressBarFill: { height: '100%', backgroundColor: '#4A90E2', borderRadius: 3 },
+  timerWarning: { color: '#FF3D71' },
+  progressText: { fontSize: 15, fontWeight: '600', color: '#6C7693' },
+  progressBarBackground: { height: 6, backgroundColor: '#E5E9F2', borderRadius: 3, marginBottom: 15, overflow: 'hidden', flexDirection: 'row-reverse' },
+  progressBarFill: { height: '100%', backgroundColor: '#3366FF', borderRadius: 3 },
   questionScroll: { flex: 1 },
   questionCard: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.05, shadowRadius: 15, elevation: 3, marginBottom: 10 },
-  topicBadge: { alignSelf: 'flex-end', backgroundColor: '#EBF4FF', color: '#4A90E2', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, fontSize: 12, fontWeight: '600', marginBottom: 15, overflow: 'hidden' },
-  questionText: { fontSize: 20, fontWeight: '700', color: '#2D3748', textAlign: 'right', marginBottom: 30, lineHeight: 30 },
+  topicBadge: { alignSelf: 'flex-end', backgroundColor: '#EEF2FF', color: '#3366FF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, fontSize: 12, fontWeight: '600', marginBottom: 15, overflow: 'hidden' },
+  questionText: { fontSize: 20, fontWeight: '700', color: '#1A1F36', textAlign: 'right', marginBottom: 30, lineHeight: 30 },
   optionsContainer: { width: '100%', marginBottom: 30 },
   optionButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', backgroundColor: '#F7FAFC', borderWidth: 2, borderColor: '#EDF2F7', borderRadius: 12, padding: 16, marginBottom: 12 },
-  selectedOption: { backgroundColor: '#EBF4FF', borderColor: '#4A90E2' },
+  selectedOption: { backgroundColor: '#EEF2FF', borderColor: '#3366FF' },
   optionText: { fontSize: 16, color: '#4A5568', textAlign: 'right', marginRight: 15, flex: 1 },
-  selectedOptionText: { color: '#2B6CB0', fontWeight: '600' },
-  radioCircle: { height: 20, width: 20, borderRadius: 10, borderWidth: 2, borderColor: '#CBD5E0', alignItems: 'center', justifyContent: 'center' },
-  radioCircleSelected: { borderColor: '#4A90E2', borderWidth: 5 },
-  infoBox: { flexDirection: 'row-reverse', alignItems: 'center', backgroundColor: '#F7FAFC', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0' },
-  infoText: { fontSize: 14, color: '#718096', textAlign: 'right', marginRight: 10, flex: 1 },
+  selectedOptionText: { color: '#2952CC', fontWeight: '600' },
+  radioCircle: { height: 20, width: 20, borderRadius: 10, borderWidth: 2, borderColor: '#CDD3DE', alignItems: 'center', justifyContent: 'center' },
+  radioCircleSelected: { borderColor: '#3366FF', borderWidth: 5 },
+  infoBox: { flexDirection: 'row-reverse', alignItems: 'center', backgroundColor: '#F5F7FB', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#E5E9F2' },
+  infoText: { fontSize: 14, color: '#6C7693', textAlign: 'right', marginRight: 10, flex: 1 },
   bottomControls: { paddingBottom: 40, paddingTop: 10 },
   navRow: { flexDirection: 'row-reverse', justifyContent: 'space-between', marginBottom: 15, gap: 12 },
-  actionButton: { flex: 1, backgroundColor: '#4A90E2', flexDirection: 'row-reverse', justifyContent: 'center', alignItems: 'center', paddingVertical: 14, borderRadius: 14, shadowColor: '#4A90E2', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 6, elevation: 3 },
-  prevButton: { backgroundColor: '#EBF4FF', shadowOpacity: 0, elevation: 0 },
+  actionButton: { flex: 1, backgroundColor: '#3366FF', flexDirection: 'row-reverse', justifyContent: 'center', alignItems: 'center', paddingVertical: 14, borderRadius: 14, shadowColor: '#3366FF', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 6, elevation: 3 },
+  prevButton: { backgroundColor: '#EEF2FF', shadowOpacity: 0, elevation: 0 },
   actionButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
-  prevButtonText: { color: '#4A90E2' },
+  prevButtonText: { color: '#3366FF' },
   disabledButton: { opacity: 0.4 },
 });

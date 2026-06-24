@@ -81,7 +81,7 @@ export default function FeedbackModal({ visible, onClose }: Props) {
             <View style={styles.modalContent}>
               <View style={styles.header}>
                 <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                  <Ionicons name="close" size={24} color="#162C5B" />
+                  <Ionicons name="close" size={24} color="#1A1F36" />
                 </TouchableOpacity>
                 <Text style={styles.title}>נשמח לשמוע ממך </Text>
                 <View style={{ width: 24 }} />
@@ -94,7 +94,7 @@ export default function FeedbackModal({ visible, onClose }: Props) {
               <TextInput
                 style={styles.textInput}
                 placeholder="מה נוכל לשפר?"
-                placeholderTextColor="#A0AEC0"
+                placeholderTextColor="#9CA3B4"
                 multiline
                 maxLength={500}
                 value={feedback}
@@ -126,7 +126,7 @@ export default function FeedbackModal({ visible, onClose }: Props) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(22, 44, 91, 0.4)',
+    backgroundColor: 'rgba(26, 31, 54, 0.35)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -158,40 +158,40 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#162C5B',
+    color: '#1A1F36',
   },
   subtitle: {
     fontSize: 14,
-    color: '#718096',
+    color: '#6C7693',
     textAlign: 'right',
     marginBottom: 16,
   },
   textInput: {
-    backgroundColor: '#F7FAFC',
+    backgroundColor: '#F5F7FB',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#E5E9F2',
     borderRadius: 12,
     padding: 16,
     height: 150,
     fontSize: 16,
-    color: '#2D3748',
+    color: '#1A1F36',
     textAlign: 'right',
   },
   charCount: {
     fontSize: 12,
-    color: '#A0AEC0',
+    color: '#9CA3B4',
     textAlign: 'left',
     marginTop: 4,
     marginBottom: 20,
   },
   submitButton: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#3366FF',
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
   },
   submitButtonDisabled: {
-    backgroundColor: '#A0AEC0',
+    backgroundColor: '#9CA3B4',
   },
   submitButtonText: {
     color: '#FFFFFF',

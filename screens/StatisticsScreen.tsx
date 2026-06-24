@@ -237,7 +237,7 @@ export default function StatisticsScreen() {
           { justifyContent: "center", alignItems: "center" },
         ]}
       >
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="large" color="#3366FF" />
         <Text style={{ marginTop: 15, color: "#4A5568" }}>טוען נתונים...</Text>
       </View>
     );
@@ -247,7 +247,7 @@ export default function StatisticsScreen() {
     <SafeAreaView style={styles.safeArea}>
       {isFetchingDetails && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#4A90E2" />
+          <ActivityIndicator size="large" color="#3366FF" />
           <Text style={styles.loadingOverlayText}>מכין את פרטי המבחן...</Text>
         </View>
       )}
@@ -276,7 +276,7 @@ export default function StatisticsScreen() {
                   <Ionicons
                     name="checkmark-circle-outline"
                     size={24}
-                    color="#48BB78"
+                    color="#00D68F"
                   />
                   <Text style={styles.statValue}>{accuracyRate}%</Text>
                   <Text style={styles.statLabel}>דיוק כללי</Text>
@@ -286,7 +286,7 @@ export default function StatisticsScreen() {
                 <View
                   style={[styles.statBox, !showAccuracy && { width: "100%" }]}
                 >
-                  <Ionicons name="flame-outline" size={24} color="#ED8936" />
+                  <Ionicons name="flame-outline" size={24} color="#FF7A1A" />
                   <Text style={styles.statValue}>{totalQuestionsSolved}</Text>
                   <Text style={styles.statLabel}>שאלות שפתרת</Text>
                 </View>
@@ -299,7 +299,7 @@ export default function StatisticsScreen() {
               style={[
                 styles.miniChartContainer,
                 improvementTrend.startsWith("-") && {
-                  backgroundColor: "#FFF5F5",
+                  backgroundColor: "#FFF0F4",
                 },
               ]}
             >
@@ -307,7 +307,7 @@ export default function StatisticsScreen() {
                 <Text
                   style={[
                     styles.trendLabel,
-                    improvementTrend.startsWith("-") && { color: "#C53030" },
+                    improvementTrend.startsWith("-") && { color: "#DB2B5A" },
                   ]}
                 >
                   מגמת שיפור כללית
@@ -315,7 +315,7 @@ export default function StatisticsScreen() {
                 <Text
                   style={[
                     styles.trendValue,
-                    improvementTrend.startsWith("-") && { color: "#E53E3E" },
+                    improvementTrend.startsWith("-") && { color: "#FF3D71" },
                   ]}
                 >
                   {improvementTrend}
@@ -343,15 +343,15 @@ export default function StatisticsScreen() {
                       <View
                         style={[
                           styles.simChangeContainer,
-                          sim.changeNum < 0 && { backgroundColor: "#FFF5F5" },
-                          sim.changeNum === 0 && { backgroundColor: "#EDF2F7" },
+                          sim.changeNum < 0 && { backgroundColor: "#FFF0F4" },
+                          sim.changeNum === 0 && { backgroundColor: "#EBF0F7" },
                         ]}
                       >
                         <Text
                           style={[
                             styles.simChangeText,
-                            sim.changeNum < 0 && { color: "#E53E3E" },
-                            sim.changeNum === 0 && { color: "#718096" },
+                            sim.changeNum < 0 && { color: "#FF3D71" },
+                            sim.changeNum === 0 && { color: "#6C7693" },
                           ]}
                         >
                           {sim.change}
@@ -367,10 +367,10 @@ export default function StatisticsScreen() {
                           size={16}
                           color={
                             sim.changeNum > 0
-                              ? "#48BB78"
+                              ? "#00D68F"
                               : sim.changeNum < 0
-                                ? "#E53E3E"
-                                : "#718096"
+                                ? "#FF3D71"
+                                : "#6C7693"
                           }
                         />
                       </View>
@@ -394,7 +394,7 @@ export default function StatisticsScreen() {
                       <Ionicons
                         name={showAllHistory ? "chevron-up" : "chevron-down"}
                         size={16}
-                        color="#4A90E2"
+                        color="#3366FF"
                       />
                     </TouchableOpacity>
                   )}
@@ -433,7 +433,7 @@ export default function StatisticsScreen() {
               <Switch
                 value={showAccuracy}
                 onValueChange={setShowAccuracy}
-                trackColor={{ true: "#0d78f2" }}
+                trackColor={{ true: "#3366FF" }}
                 thumbColor={"#f4f3f4"}
               />
               <Text style={styles.toggleLabel}>אחוז דיוק</Text>
@@ -443,7 +443,7 @@ export default function StatisticsScreen() {
               <Switch
                 value={showQuestions}
                 onValueChange={setShowQuestions}
-                trackColor={{ true: "#0d78f2" }}
+                trackColor={{ true: "#3366FF" }}
                 thumbColor={"#f4f3f4"}
               />
               <Text style={styles.toggleLabel}>מספר שאלות שפתרת</Text>
@@ -454,7 +454,7 @@ export default function StatisticsScreen() {
                 <Switch
                   value={showTrend}
                   onValueChange={setShowTrend}
-                  trackColor={{ true: "#0d78f2" }}
+                  trackColor={{ true: "#3366FF" }}
                   thumbColor={"#f4f3f4"}
                 />
                 <Text style={styles.toggleLabel}>מגמת שיפור</Text>
@@ -465,7 +465,7 @@ export default function StatisticsScreen() {
               <Switch
                 value={showHistory}
                 onValueChange={setShowHistory}
-                trackColor={{ true: "#0d78f2" }}
+                trackColor={{ true: "#3366FF" }}
                 thumbColor={"#f4f3f4"}
               />
               <Text style={styles.toggleLabel}>היסטוריית סימולציות</Text>
@@ -483,7 +483,7 @@ export default function StatisticsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#9dbde9" },
+  safeArea: { flex: 1, backgroundColor: "#F0F4FF" },
   scrollView: { flex: 1 },
   scrollContent: {
     paddingHorizontal: 20,
@@ -501,18 +501,18 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     fontWeight: "700",
-    color: "#2D3748",
+    color: "#1A1F36",
   },
 
   mainShareButton: {
     flexDirection: "row-reverse",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#4A90E2",
+    backgroundColor: "#3366FF",
     paddingVertical: 16,
     borderRadius: 16,
     marginBottom: 20,
-    shadowColor: "#4A90E2",
+    shadowColor: "#3366FF",
     shadowOpacity: 0.3,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 8,
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
   editPanelTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#2D3748",
+    color: "#1A1F36",
   },
   closeMenuButton: {
     padding: 4,
@@ -564,7 +564,7 @@ const styles = StyleSheet.create({
     flexDirection: "row-reverse",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#48BB78",
+    backgroundColor: "#00D68F",
     paddingVertical: 14,
     borderRadius: 12,
     marginTop: 10,
@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#F7FAFC",
     paddingBottom: 15,
   },
-  shareCardTitle: { fontSize: 20, fontWeight: "800", color: "#2D3748" },
+  shareCardTitle: { fontSize: 20, fontWeight: "800", color: "#1A1F36" },
   statsGrid: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -611,10 +611,10 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#2D3748",
+    color: "#1A1F36",
     marginTop: 5,
   },
-  statLabel: { fontSize: 12, color: "#718096", marginTop: 2 },
+  statLabel: { fontSize: 12, color: "#6C7693", marginTop: 2 },
   miniChartContainer: {
     backgroundColor: "#F0FFF4",
     padding: 12,
@@ -623,8 +623,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   trendInfo: { flexDirection: "row-reverse", alignItems: "center" },
-  trendLabel: { fontSize: 14, color: "#2F855A", marginLeft: 8 },
-  trendValue: { fontSize: 16, fontWeight: "700", color: "#48BB78" },
+  trendLabel: { fontSize: 14, color: "#00875A", marginLeft: 8 },
+  trendValue: { fontSize: 16, fontWeight: "700", color: "#00D68F" },
   historyShareContainer: {
     marginTop: 15,
     borderTopWidth: 1,
@@ -634,13 +634,13 @@ const styles = StyleSheet.create({
   listHeaderShare: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#2D3748",
+    color: "#1A1F36",
     textAlign: "right",
     marginBottom: 12,
   },
   emptyStateText: {
     fontSize: 14,
-    color: "#A0AEC0",
+    color: "#9CA3B4",
     textAlign: "center",
     marginTop: 10,
     marginBottom: 10,
@@ -655,8 +655,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   simInfo: { alignItems: "flex-end" },
-  simScore: { fontSize: 15, fontWeight: "700", color: "#2D3748" },
-  simDate: { fontSize: 12, color: "#A0AEC0" },
+  simScore: { fontSize: 15, fontWeight: "700", color: "#1A1F36" },
+  simDate: { fontSize: 12, color: "#9CA3B4" },
   simChangeContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -666,7 +666,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   simChangeText: {
-    color: "#38B2AC",
+    color: "#00B8A9",
     fontWeight: "700",
     marginRight: 4,
     fontSize: 13,
@@ -681,7 +681,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   showMoreText: {
-    color: "#4A90E2",
+    color: "#3366FF",
     fontSize: 14,
     fontWeight: "600",
     marginLeft: 6, // מרווח בין האייקון לטקסט

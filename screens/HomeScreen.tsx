@@ -254,14 +254,18 @@ export default function HomeScreen({ navigation }: Props) {
             styles.streakBadge,
             currentStreak === 0 && styles.streakBadgeInactive,
           ]}>
-            <Animated.Text
-              style={[
-                styles.streakFireIcon,
-                { transform: [{ scale: pulseAnim }] },
-              ]}
-            >
-              🔥
-            </Animated.Text>
+            {currentStreak > 0 ? (
+              <Animated.Text
+                style={[
+                  styles.streakFireIcon,
+                  { transform: [{ scale: pulseAnim }] },
+                ]}
+              >
+                🔥
+              </Animated.Text>
+            ) : (
+              <Ionicons name="flame-outline" size={18} color="#B0B8C9" />
+            )}
             <Text style={[
               styles.streakNumber,
               currentStreak === 0 && styles.streakNumberInactive,
@@ -271,7 +275,7 @@ export default function HomeScreen({ navigation }: Props) {
           </View>
 
           <TouchableOpacity onPress={openMenu} style={styles.settingsButton}>
-            <Ionicons name="settings-outline" size={26} color="#162C5B" />
+            <Ionicons name="settings-outline" size={26} color="#1A1F36" />
           </TouchableOpacity>
         </View>
 
@@ -287,7 +291,7 @@ export default function HomeScreen({ navigation }: Props) {
             onPress={() => handleNavigation("StudyMaterials")}
           >
             <View style={styles.cardIcon}>
-              <Ionicons name="book-outline" size={24} color="#2695D8" />
+              <Ionicons name="book-outline" size={24} color="#3366FF" />
             </View>
             <View style={styles.cardTextContainer}>
               <Text style={styles.cardTitle}>חומרי לימוד</Text>
@@ -303,7 +307,7 @@ export default function HomeScreen({ navigation }: Props) {
             onPress={() => handleNavigation("Practice")}
           >
             <View style={styles.cardIcon}>
-              <Ionicons name="pencil-outline" size={24} color="#F3902E" />
+              <Ionicons name="pencil-outline" size={24} color="#FF6D00" />
             </View>
             <View style={styles.cardTextContainer}>
               <Text style={styles.cardTitle}>תרגול חופשי</Text>
@@ -319,7 +323,7 @@ export default function HomeScreen({ navigation }: Props) {
             onPress={() => handleNavigation("Simulation")}
           >
             <View style={styles.cardIcon}>
-              <Ionicons name="timer-outline" size={24} color="#162C5B" />
+              <Ionicons name="timer-outline" size={24} color="#7C3AED" />
             </View>
             <View style={styles.cardTextContainer}>
               <Text style={styles.cardTitle}>סימולציה מלאה</Text>
@@ -333,7 +337,7 @@ export default function HomeScreen({ navigation }: Props) {
             onPress={() => handleNavigation("Statistics")}
           >
             <View style={styles.cardIcon}>
-              <Ionicons name="stats-chart-outline" size={24} color="#4FB5ED" />
+              <Ionicons name="stats-chart-outline" size={24} color="#00BCD4" />
             </View>
             <View style={styles.cardTextContainer}>
               <Text style={styles.cardTitle}>סטטיסטיקות</Text>
@@ -346,8 +350,8 @@ export default function HomeScreen({ navigation }: Props) {
             activeOpacity={0.7}
             onPress={() => handleNavigation("WeaknessAnalyzer")}
           >
-            <View style={[styles.cardIcon, { backgroundColor: "#EBF4FF" }]}>
-              <Ionicons name="rocket-outline" size={24} color="#2695D8" />
+            <View style={[styles.cardIcon, { backgroundColor: "#EEF2FF" }]}>
+              <Ionicons name="rocket-outline" size={24} color="#3366FF" />
             </View>
             <View style={styles.cardTextContainer}>
               <Text style={styles.cardTitle}>תרגול חכם ממוקד</Text>
@@ -383,7 +387,7 @@ export default function HomeScreen({ navigation }: Props) {
               style={styles.menuItem}
               onPress={() => handleMenuPress("premium")}
             >
-              <Ionicons name="star-outline" size={22} color="#2695D8" />
+              <Ionicons name="star-outline" size={22} color="#3366FF" />
               <Text style={styles.menuItemText}>
                 {isPremium ? "ניהול מנוי פרימיום" : "שדרוג לפרימיום"}
               </Text>
@@ -398,7 +402,7 @@ export default function HomeScreen({ navigation }: Props) {
               <Ionicons
                 name="chatbubble-ellipses-outline"
                 size={22}
-                color="#2695D8"
+                color="#3366FF"
               />
               <Text style={styles.menuItemText}>מה נוכל לשפר?</Text>
             </TouchableOpacity>
@@ -411,7 +415,7 @@ export default function HomeScreen({ navigation }: Props) {
               <Ionicons
                 name="document-text-outline"
                 size={22}
-                color="#2695D8"
+                color="#3366FF"
               />
               <Text style={styles.menuItemText}>מדיניות האפליקציה</Text>
             </TouchableOpacity>
@@ -420,14 +424,14 @@ export default function HomeScreen({ navigation }: Props) {
               style={styles.menuItem}
               onPress={() => handleMenuPress("contact")}
             >
-              <Ionicons name="mail-outline" size={22} color="#2695D8" />
+              <Ionicons name="mail-outline" size={22} color="#3366FF" />
               <Text style={styles.menuItemText}>צור קשר</Text>
             </TouchableOpacity>
 
             <View style={styles.menuDivider} />
 
             <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-              <Ionicons name="log-out-outline" size={22} color="#2695D8" />
+              <Ionicons name="log-out-outline" size={22} color="#3366FF" />
               <Text style={[styles.menuItemText]}>התנתק מהחשבון</Text>
             </TouchableOpacity>
 
@@ -435,8 +439,8 @@ export default function HomeScreen({ navigation }: Props) {
               style={styles.menuItem}
               onPress={handleDeleteAccount}
             >
-              <Ionicons name="trash-outline" size={22} color="#E53E3E" />
-              <Text style={[styles.menuItemText, { color: "#E53E3E" }]}>
+              <Ionicons name="trash-outline" size={22} color="#FF3D71" />
+              <Text style={[styles.menuItemText, { color: "#FF3D71" }]}>
                 מחק חשבון
               </Text>
             </TouchableOpacity>
@@ -453,7 +457,7 @@ export default function HomeScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#9dbde9" },
+  safeArea: { flex: 1, backgroundColor: "#F0F4FF" },
   container: {
     flex: 1,
     paddingHorizontal: 24,
@@ -472,14 +476,14 @@ const styles = StyleSheet.create({
   streakBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    backgroundColor: "rgba(51, 102, 255, 0.1)",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
     gap: 4,
   },
   streakBadgeInactive: {
-    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    backgroundColor: "rgba(0, 0, 0, 0.04)",
   },
   streakFireIcon: {
     fontSize: 18,
@@ -487,21 +491,21 @@ const styles = StyleSheet.create({
   streakNumber: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#FFFFFF",
+    color: "#3366FF",
   },
   streakNumberInactive: {
-    color: "rgba(255, 255, 255, 0.5)",
+    color: "#B0B8C9",
   },
 
   headerContainer: { marginBottom: 24, alignItems: "flex-end" },
   title: {
     fontSize: 26,
     fontWeight: "800",
-    color: "#ffffff",
+    color: "#1A1F36",
     marginBottom: 6,
     textAlign: "right",
   },
-  subtitle: { fontSize: 15, color: "#ffffff", textAlign: "right" },
+  subtitle: { fontSize: 15, color: "#6C7693", textAlign: "right" },
   cardsContainer: { flex: 1, gap: 12 },
   card: {
     backgroundColor: "#FFFFFF",
@@ -509,7 +513,7 @@ const styles = StyleSheet.create({
     padding: 16,
     flexDirection: "row-reverse",
     alignItems: "center",
-    shadowColor: "#162C5B",
+    shadowColor: "#3366FF",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.04,
     shadowRadius: 12,
@@ -519,7 +523,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: "#F0F4F8",
+    backgroundColor: "#F0F3FF",
     justifyContent: "center",
     alignItems: "center",
     marginLeft: 14,
@@ -528,14 +532,14 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 17,
     fontWeight: "700",
-    color: "#162C5B",
+    color: "#1A1F36",
     marginBottom: 2,
   },
-  cardDescription: { fontSize: 13, color: "#6B7C9D", textAlign: "right" },
+  cardDescription: { fontSize: 13, color: "#6C7693", textAlign: "right" },
 
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(22, 44, 91, 0.4)",
+    backgroundColor: "rgba(26, 31, 54, 0.35)",
     flexDirection: "row",
     justifyContent: "flex-end",
   },
@@ -555,13 +559,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#F0F4F8",
+    borderBottomColor: "#E5E9F2",
     marginBottom: 10,
   },
   menuHeaderText: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#162C5B",
+    color: "#1A1F36",
     textAlign: "right",
   },
   menuItem: {
@@ -573,13 +577,13 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     fontSize: 16,
-    color: "#162C5B",
+    color: "#1A1F36",
     fontWeight: "600",
     textAlign: "right",
   },
   menuDivider: {
     height: 1,
-    backgroundColor: "#E2E8F0",
+    backgroundColor: "#E5E9F2",
     marginVertical: 10,
     marginHorizontal: 16,
   },

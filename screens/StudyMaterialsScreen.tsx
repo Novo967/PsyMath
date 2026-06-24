@@ -109,7 +109,7 @@ export default function StudyMaterialsScreen() {
 
         {isLoading ? (
           <View style={styles.loaderContainer}>
-            <ActivityIndicator size="large" color="#ffffff" />
+            <ActivityIndicator size="large" color="#3366FF" />
             <Text style={styles.loaderText}>טוען חומרי לימוד...</Text>
           </View>
         ) : (
@@ -123,7 +123,7 @@ export default function StudyMaterialsScreen() {
               <RefreshControl
                 refreshing={isRefreshing}
                 onRefresh={onRefresh}
-                tintColor="#ffffff"
+                tintColor="#6C7693"
               />
             }
             renderItem={({ item }) => (
@@ -137,7 +137,7 @@ export default function StudyMaterialsScreen() {
                 <Ionicons
                   name="chevron-back"
                   size={20}
-                  color="#CBD5E0"
+                  color="#CDD3DE"
                   style={styles.chevron}
                 />
                 <View style={styles.cardContent}>
@@ -160,12 +160,10 @@ export default function StudyMaterialsScreen() {
   );
 }
 
-// ... הסטיילים נשארים בדיוק אותו דבר, השמטתי אותם כאן כדי לחסוך מקום
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#9dbde9",
+    backgroundColor: "#F5F7FB",
   },
   container: {
     flex: 1,
@@ -179,12 +177,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "800",
-    color: "#ffffff",
+    color: "#1A1F36",
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: "#ffffff",
+    color: "#6C7693",
   },
   listContainer: {
     paddingBottom: 20,
@@ -196,7 +194,7 @@ const styles = StyleSheet.create({
   },
   loaderText: {
     marginTop: 10,
-    color: "#ffffff",
+    color: "#6C7693",
     fontSize: 16,
   },
   chapterCard: {
@@ -224,7 +222,7 @@ const styles = StyleSheet.create({
   chapterTitle: {
     fontSize: 17,
     fontWeight: "600",
-    color: "#2D3748",
+    color: "#1A1F36",
     textAlign: "right",
   },
   iconContainer: {

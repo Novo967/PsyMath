@@ -142,7 +142,7 @@ export default function LoginScreen() {
                   <ActivityIndicator color="#333" />
                 ) : (
                   <>
-                    <Ionicons name="logo-google" size={20} color="#4181ef" />
+                    <Ionicons name="logo-google" size={20} color="#3366FF" />
                     <Text style={styles.googleButtonText}>המשך עם Google</Text>
                   </>
                 )}
@@ -158,7 +158,7 @@ export default function LoginScreen() {
                 <Ionicons
                   name="mail-outline"
                   size={20}
-                  color="#718096"
+                  color="#6C7693"
                   style={styles.icon}
                 />
                 <TextInput
@@ -176,7 +176,7 @@ export default function LoginScreen() {
                 <Ionicons
                   name="lock-closed-outline"
                   size={20}
-                  color="#718096"
+                  color="#6C7693"
                   style={styles.icon}
                 />
                 <TextInput
@@ -194,7 +194,7 @@ export default function LoginScreen() {
                   <Ionicons
                     name={showPassword ? "eye-outline" : "eye-off-outline"}
                     size={20}
-                    color="#718096"
+                    color="#6C7693"
                   />
                 </TouchableOpacity>
               </View>
@@ -226,7 +226,7 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#F8F9FA" },
+  safeArea: { flex: 1, backgroundColor: "#F5F7FB" },
   keyboardAvoidingView: { flex: 1 },
   scrollContainer: {
     flexGrow: 1,
@@ -234,8 +234,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   header: { alignItems: "center", marginBottom: 40 },
-  title: { fontSize: 28, fontWeight: "800", color: "#2D3748", marginBottom: 8 },
-  subtitle: { fontSize: 16, color: "#718096" },
+  title: { fontSize: 28, fontWeight: "800", color: "#1A1F36", marginBottom: 8 },
+  subtitle: { fontSize: 16, color: "#6C7693" },
   form: { gap: 16 },
   googleButton: {
     flexDirection: "row",
@@ -245,18 +245,18 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: "#E5E9F2",
     gap: 10,
     elevation: 2,
   },
-  googleButtonText: { fontSize: 16, fontWeight: "600", color: "#2D3748" },
+  googleButtonText: { fontSize: 16, fontWeight: "600", color: "#1A1F36" },
   dividerContainer: {
     flexDirection: "row",
     alignItems: "center",
     marginVertical: 10,
   },
-  divider: { flex: 1, height: 1, backgroundColor: "#E2E8F0" },
-  dividerText: { marginHorizontal: 15, color: "#A0AEC0", fontSize: 14 },
+  divider: { flex: 1, height: 1, backgroundColor: "#E5E9F2" },
+  dividerText: { marginHorizontal: 15, color: "#9CA3B4", fontSize: 14 },
   inputContainer: {
     flexDirection: "row-reverse",
     alignItems: "center",
@@ -265,13 +265,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     height: 56,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: "#E5E9F2",
   },
   icon: { marginLeft: 12 },
-  input: { flex: 1, fontSize: 16, color: "#2D3748" },
+  input: { flex: 1, fontSize: 16, color: "#1A1F36" },
   eyeIconContainer: { padding: 5 },
   submitButton: {
-    backgroundColor: "#4A90E2",
+    backgroundColor: "#3366FF",
     height: 56,
     borderRadius: 12,
     justifyContent: "center",
@@ -281,5 +281,5 @@ const styles = StyleSheet.create({
   },
   submitButtonText: { color: "#FFF", fontSize: 18, fontWeight: "700" },
   linkContainer: { marginTop: 15, alignItems: "center" },
-  linkText: { color: "#4A90E2", fontSize: 16, fontWeight: "600" },
+  linkText: { color: "#3366FF", fontSize: 16, fontWeight: "600" },
 });

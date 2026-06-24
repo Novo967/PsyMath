@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     paddingHorizontal: 40,
     alignItems: "center",
-    shadowColor: "#FF6B00",
+    shadowColor: "#FF6D00",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 20,
@@ -139,24 +139,24 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#162C5B",
+    color: "#1A1F36",
     marginBottom: 4,
   },
   streakNumber: {
     fontSize: 48,
     fontWeight: "900",
-    color: "#F3902E",
+    color: "#FF6D00",
     marginVertical: 4,
   },
   subtitle: {
     fontSize: 15,
-    color: "#6B7C9D",
+    color: "#6C7693",
     fontWeight: "600",
     marginBottom: 8,
   },
   encouragement: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#48BB78",
+    color: "#00D68F",
   },
 });

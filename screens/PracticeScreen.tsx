@@ -227,7 +227,7 @@ export default function PracticeScreen() {
       <ActivityIndicator
         style={{ flex: 1, justifyContent: "center" }}
         size="large"
-        color="#3182CE"
+        color="#3366FF"
       />
     );
   }
@@ -406,7 +406,7 @@ export default function PracticeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#9dbde9",
+    backgroundColor: "#F0F4FF",
   },
   scrollView: {
     flex: 1,
@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
   },
   topicBadge: {
     alignSelf: "flex-end",
-    backgroundColor: "#E2E8F0",
+    backgroundColor: "#E5E9F2",
     paddingVertical: 6,
     paddingHorizontal: 14,
     borderRadius: 20,
@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     textAlign: "right",
-    color: "#2D3748",
+    color: "#1A1F36",
     lineHeight: 30,
   },
   optionsContainer: {
@@ -464,16 +464,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   selectedOption: {
-    borderColor: "#3182CE",
-    backgroundColor: "#EBF8FF",
+    borderColor: "#3366FF",
+    backgroundColor: "#EEF2FF",
   },
   correctOption: {
-    borderColor: "#48BB78",
-    backgroundColor: "#F0FFF4",
+    borderColor: "#00D68F",
+    backgroundColor: "#E8FFF3",
   },
   wrongOption: {
-    borderColor: "#F56565",
-    backgroundColor: "#FFF5F5",
+    borderColor: "#FF3D71",
+    backgroundColor: "#FFF0F4",
   },
   optionText: {
     fontSize: 16,
@@ -483,41 +483,41 @@ const styles = StyleSheet.create({
   selectedOptionText: {
     fontSize: 16,
     textAlign: "right",
-    color: "#2B6CB0",
+    color: "#2952CC",
     fontWeight: "600",
   },
   correctOptionText: {
     fontSize: 16,
     textAlign: "right",
-    color: "#276749",
+    color: "#00875A",
     fontWeight: "600",
   },
   wrongOptionText: {
     fontSize: 16,
     textAlign: "right",
-    color: "#9B2C2C",
+    color: "#B82050",
     fontWeight: "600",
   },
   fixedBottomContainer: {
     paddingHorizontal: 20,
     paddingBottom: 60, // מרווח נשימה בתחתית המסך
     paddingTop: 10,
-    backgroundColor: "#9dbde9",
+    backgroundColor: "#F0F4FF",
   },
   actionButton: {
-    backgroundColor: "#3182CE",
+    backgroundColor: "#3366FF",
     padding: 16,
     borderRadius: 14,
     alignItems: "center",
-    shadowColor: "#3182CE",
+    shadowColor: "#3366FF",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 4,
   },
   nextButton: {
-    backgroundColor: "#2D3748",
-    shadowColor: "#2D3748",
+    backgroundColor: "#1A1F36",
+    shadowColor: "#1A1F36",
   },
   actionButtonText: {
     color: "#FFFFFF",
@@ -531,14 +531,14 @@ const styles = StyleSheet.create({
   },
   correctFeedbackText: {
     fontSize: 16,
-    color: "#38A169",
+    color: "#00C48F",
     textAlign: "right",
     fontWeight: "bold",
     marginBottom: 10,
   },
   wrongFeedbackText: {
     fontSize: 16,
-    color: "#E53E3E",
+    color: "#FF3D71",
     textAlign: "right",
     fontWeight: "600",
     marginBottom: 10,
@@ -548,13 +548,13 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   solutionButtonText: {
-    color: "#3182CE",
+    color: "#3366FF",
     fontSize: 15,
     textAlign: "right",
     fontWeight: "600",
   },
   solutionBox: {
-    backgroundColor: "#EBF8FF",
+    backgroundColor: "#EEF2FF",
     padding: 20,
     borderRadius: 12,
     marginTop: 15,
@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
   solutionBoxText: {
     fontSize: 16,
     textAlign: "right",
-    color: "#2C5282",
+    color: "#2952CC",
     lineHeight: 26,
   },
 });

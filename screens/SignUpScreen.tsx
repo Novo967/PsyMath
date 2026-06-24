@@ -245,7 +245,7 @@ export default function SignUpScreen() {
                   <ActivityIndicator color="#333" />
                 ) : (
                   <>
-                    <Ionicons name="logo-google" size={20} color="#4181ef" />
+                    <Ionicons name="logo-google" size={20} color="#3366FF" />
                     <Text style={styles.googleButtonText}>המשך עם Google</Text>
                   </>
                 )}
@@ -262,7 +262,7 @@ export default function SignUpScreen() {
                 <Ionicons
                   name="person-outline"
                   size={20}
-                  color="#718096"
+                  color="#6C7693"
                   style={styles.icon}
                 />
                 <TextInput
@@ -377,7 +377,7 @@ export default function SignUpScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#F8F9FA" },
+  safeArea: { flex: 1, backgroundColor: "#F5F7FB" },
   keyboardAvoidingView: { flex: 1 },
   scrollContainer: {
     flexGrow: 1,
@@ -386,8 +386,8 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   header: { alignItems: "center", marginBottom: 40 },
-  title: { fontSize: 28, fontWeight: "800", color: "#2D3748", marginBottom: 8 },
-  subtitle: { fontSize: 16, color: "#718096" },
+  title: { fontSize: 28, fontWeight: "800", color: "#1A1F36", marginBottom: 8 },
+  subtitle: { fontSize: 16, color: "#6C7693" },
   form: { gap: 16 },
   appleButtonWrapper: {
     width: "100%",
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: "#E5E9F2",
     gap: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -413,14 +413,14 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  googleButtonText: { fontSize: 16, fontWeight: "600", color: "#2D3748" },
+  googleButtonText: { fontSize: 16, fontWeight: "600", color: "#1A1F36" },
   dividerContainer: {
     flexDirection: "row",
     alignItems: "center",
     marginVertical: 10,
   },
-  divider: { flex: 1, height: 1, backgroundColor: "#E2E8F0" },
-  dividerText: { marginHorizontal: 15, color: "#A0AEC0", fontSize: 14 },
+  divider: { flex: 1, height: 1, backgroundColor: "#E5E9F2" },
+  dividerText: { marginHorizontal: 15, color: "#9CA3B4", fontSize: 14 },
   inputContainer: {
     flexDirection: "row-reverse",
     alignItems: "center",
@@ -429,19 +429,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     height: 56,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: "#E5E9F2",
   },
   icon: { marginLeft: 12 },
-  input: { flex: 1, fontSize: 16, color: "#2D3748" },
+  input: { flex: 1, fontSize: 16, color: "#1A1F36" },
   eyeIconContainer: { padding: 5 },
   submitButton: {
-    backgroundColor: "#4A90E2",
+    backgroundColor: "#3366FF",
     height: 56,
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
     marginTop: 10,
-    shadowColor: "#4A90E2",
+    shadowColor: "#3366FF",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   loginLinkText: {
-    color: "#4A90E2",
+    color: "#3366FF",
     fontSize: 16,
     fontWeight: "600",
   },

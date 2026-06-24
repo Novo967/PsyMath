@@ -214,7 +214,7 @@ export default function App() {
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="large" color="#3366FF" />
       </View>
     );
   }
@@ -225,7 +225,7 @@ export default function App() {
       <Stack.Navigator
         screenOptions={({ navigation }) => ({
           headerShown: Platform.OS === "ios",
-          headerStyle: { backgroundColor: "#9dbde9" },
+          headerStyle: { backgroundColor: "#F0F4FF" },
           headerShadowVisible: false,
           headerTitle: "",
           headerBackVisible: false,
@@ -244,7 +244,7 @@ export default function App() {
                 >
                   <Text
                     style={{
-                      color: "#007AFF",
+                      color: "#3366FF",
                       fontSize: 17,
                       fontWeight: "400",
                     }}
@@ -254,7 +254,7 @@ export default function App() {
                   <Ionicons
                     name="chevron-forward"
                     size={24}
-                    color="#007AFF"
+                    color="#3366FF"
                     style={{ marginLeft: 0 }}
                   />
                 </TouchableOpacity>
@@ -318,30 +318,30 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 24,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: "#F5F7FB",
   },
   updateTitle: {
     fontSize: 26,
     fontWeight: "800",
-    color: "#2D3748",
+    color: "#1A1F36",
     marginBottom: 12,
     textAlign: "center",
   },
   updateSubtitle: {
     fontSize: 16,
-    color: "#718096",
+    color: "#6C7693",
     textAlign: "center",
     marginBottom: 32,
     lineHeight: 24,
   },
   updateButton: {
-    backgroundColor: "#4A90E2",
+    backgroundColor: "#3366FF",
     paddingVertical: 16,
     paddingHorizontal: 40,
     borderRadius: 12,
     width: "100%",
     alignItems: "center",
-    shadowColor: "#4A90E2",
+    shadowColor: "#3366FF",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
