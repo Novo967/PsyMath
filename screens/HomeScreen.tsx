@@ -255,7 +255,7 @@ export default function HomeScreen({ navigation }: Props) {
         <View style={styles.container}>
           <View style={styles.topBar}>
             {/* Streak badge — top-left corner */}
-            <BlurView intensity={60} tint="light" style={[
+            <BlurView intensity={Platform.OS === 'ios' ? 20 : 60} tint="light" style={[
               styles.streakBadge,
               currentStreak === 0 && styles.streakBadgeInactive,
             ]}>
@@ -294,7 +294,7 @@ export default function HomeScreen({ navigation }: Props) {
               activeOpacity={0.7}
               onPress={() => handleNavigation("StudyMaterials")}
             >
-              <BlurView intensity={75} tint="light" style={styles.card}>
+              <BlurView intensity={Platform.OS === 'ios' ? 30 : 75} tint="light" style={styles.card}>
                 <View style={styles.cardIcon}>
                   <Ionicons name="book-outline" size={24} color="#3366FF" />
                 </View>
@@ -311,7 +311,7 @@ export default function HomeScreen({ navigation }: Props) {
               activeOpacity={0.7}
               onPress={() => handleNavigation("Practice")}
             >
-              <BlurView intensity={75} tint="light" style={styles.card}>
+              <BlurView intensity={Platform.OS === 'ios' ? 30 : 75} tint="light" style={styles.card}>
                 <View style={styles.cardIcon}>
                   <Ionicons name="pencil-outline" size={24} color="#FF6D00" />
                 </View>
@@ -328,7 +328,7 @@ export default function HomeScreen({ navigation }: Props) {
               activeOpacity={0.7}
               onPress={() => handleNavigation("Simulation")}
             >
-              <BlurView intensity={75} tint="light" style={styles.card}>
+              <BlurView intensity={Platform.OS === 'ios' ? 30 : 75} tint="light" style={styles.card}>
                 <View style={styles.cardIcon}>
                   <Ionicons name="timer-outline" size={24} color="#7C3AED" />
                 </View>
@@ -343,7 +343,7 @@ export default function HomeScreen({ navigation }: Props) {
               activeOpacity={0.7}
               onPress={() => handleNavigation("Statistics")}
             >
-              <BlurView intensity={75} tint="light" style={styles.card}>
+              <BlurView intensity={Platform.OS === 'ios' ? 30 : 75} tint="light" style={styles.card}>
                 <View style={styles.cardIcon}>
                   <Ionicons name="stats-chart-outline" size={24} color="#00BCD4" />
                 </View>
@@ -358,7 +358,7 @@ export default function HomeScreen({ navigation }: Props) {
               activeOpacity={0.7}
               onPress={() => handleNavigation("WeaknessAnalyzer")}
             >
-              <BlurView intensity={75} tint="light" style={styles.card}>
+              <BlurView intensity={Platform.OS === 'ios' ? 30 : 75} tint="light" style={styles.card}>
                 <View style={[styles.cardIcon, { backgroundColor: "#EEF2FF" }]}>
                   <Ionicons name="rocket-outline" size={24} color="#3366FF" />
                 </View>
