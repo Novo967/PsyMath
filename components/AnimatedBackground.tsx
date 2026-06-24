@@ -1,20 +1,20 @@
-import React, { useMemo, useEffect } from 'react';
-import { Dimensions, StyleSheet, View } from 'react-native';
 import { Canvas, Group, Path, Skia } from '@shopify/react-native-skia';
+import React, { useEffect, useMemo } from 'react';
+import { Dimensions, StyleSheet, View } from 'react-native';
 import {
+  Easing,
+  useDerivedValue,
   useSharedValue,
   withRepeat,
   withTiming,
-  Easing,
-  useDerivedValue,
 } from 'react-native-reanimated';
 
 const { width, height } = Dimensions.get('window');
 
 // The Matrix Grid settings
 const SPACING = 45; // Distance between nodes
-const COLORS = ['#3366FF', '#7C3AED', '#00BCD4', '#FF3D71', '#FFB020', '#00D68F']; // 6 Neon Colors
-const BASE_COLOR = '#CDD3DE'; // Subtle base color for resting nodes
+const COLORS = ['#3366FF', '#7C3AED', '#ffa033ff', '#FF3D71', '#ffe25fff', '#ff1f1fff']; // 6 Neon Colors
+const BASE_COLOR = '#333333ff'; // Subtle base color for resting nodes
 
 const cols = Math.ceil(width / SPACING) + 1;
 const rows = Math.ceil(height / SPACING) + 1;
@@ -76,7 +76,7 @@ const MatrixNode = ({
 
 export default function AnimatedBackground() {
   // Wave progresses diagonally from top-left (0) to bottom-right (width + height)
-  const maxWaveDist = width + height + 200; 
+  const maxWaveDist = width + height + 200;
   const waveProgress = useSharedValue(-200);
 
   useEffect(() => {
@@ -126,6 +126,6 @@ const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
     // Note: Transparent background is required here so we don't cover the screen's base background
-    backgroundColor: 'transparent',
+    backgroundColor: '#ffffff'
   },
 });

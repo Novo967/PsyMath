@@ -225,7 +225,8 @@ export default function App() {
       <Stack.Navigator
         screenOptions={({ navigation }) => ({
           headerShown: Platform.OS === "ios",
-          headerStyle: { backgroundColor: "#F0F4FF" },
+          headerTransparent: Platform.OS === "ios",
+          headerStyle: { backgroundColor: Platform.OS === "ios" ? "transparent" : "#F0F4FF" },
           headerShadowVisible: false,
           headerTitle: "",
           headerBackVisible: false,
