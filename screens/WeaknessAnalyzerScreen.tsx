@@ -166,7 +166,9 @@ export default function WeaknessAnalyzerScreen() {
             {weakTopics.map((topic, index) => (
               <View key={index} style={styles.card}>
                 <View style={styles.cardHeader}>
-                  <Text style={styles.topicName}>{topic.topicId}</Text>
+                  <Text style={styles.topicName} numberOfLines={2} ellipsizeMode="tail">
+                    {topic.topicId}
+                  </Text>
                   <View style={styles.accuracyBadge}>
                     <Text style={styles.accuracyText}>{Math.round(topic.accuracy)}% הצלחה</Text>
                   </View>
@@ -295,6 +297,9 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   topicName: {
+    flex: 1,
+    marginLeft: 12,
+    textAlign: "right",
     fontSize: 18,
     fontWeight: "700",
     color: colors.textPrimary,
