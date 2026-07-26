@@ -1,17 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { BlurView } from "expo-blur";
 import { deleteUser, signOut } from "firebase/auth";
 import { deleteDoc, doc, getDoc, updateDoc } from "firebase/firestore";
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Animated,
   Dimensions,
+  Easing,
   Linking,
   Modal,
+  Platform,
   SafeAreaView,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -19,8 +21,10 @@ import {
 } from "react-native";
 import Purchases from "react-native-purchases";
 import { RootStackParamList } from "../App";
+import AnimatedBackground from "../components/AnimatedBackground";
 import { auth, db } from "../firebaseConfig";
-
+import { fetchCurrentStreak } from "../utils/streakUtils";
+import FeedbackModal from "./FeedbackModal";
 const { width, height } = Dimensions.get("window");
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
@@ -35,9 +39,13 @@ interface Props {
 export default function HomeScreen({ navigation }: Props) {
   const [isMenuVisible, setMenuVisible] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
-  const [userName, setUserName] = useState(""); // שינינו למחרוזת ריקה כדי לטפל במצב שאין שם
+  const [userName, setUserName] = useState("");
+  const [isFeedbackModalVisible, setFeedbackModalVisible] = useState(false);
+  const [currentStreak, setCurrentStreak] = useState(0);
 
   const slideAnim = useRef(new Animated.Value(width)).current;
+  // אנימציית פעימה לאייקון הסטריק
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useFocusEffect(
     useCallback(() => {
@@ -73,6 +81,45 @@ export default function HomeScreen({ navigation }: Props) {
       fetchUserData();
     }, []),
   );
+
+  // Refresh streak every time the Home screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      const loadStreak = async () => {
+        if (auth.currentUser) {
+          const streak = await fetchCurrentStreak(auth.currentUser.uid);
+          setCurrentStreak(streak);
+        }
+      };
+      loadStreak();
+    }, [])
+  );
+
+  // Subtle pulse animation for the fire icon when streak > 0
+  useEffect(() => {
+    if (currentStreak > 0) {
+      const pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.15,
+            duration: 800,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 800,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulse.start();
+      return () => pulse.stop();
+    } else {
+      pulseAnim.setValue(1);
+    }
+  }, [currentStreak]);
 
   const handleNavigation = async (screenName: keyof RootStackParamList) => {
     if (!auth.currentUser) return;
@@ -206,6 +253,9 @@ export default function HomeScreen({ navigation }: Props) {
         case "premium":
           navigation.navigate("Paywall" as any);
           break;
+        case "feedback":
+          setFeedbackModalVisible(true);
+          break;
         case "policy":
           Linking.openURL("https://novo967.github.io/Camuty-landing-page/");
           break;
@@ -221,104 +271,128 @@ export default function HomeScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.topBar}>
-          <TouchableOpacity onPress={openMenu} style={styles.settingsButton}>
-            <Ionicons name="settings-outline" size={26} color="#162C5B" />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.headerContainer}>
-          <Text style={styles.title}>הכנה כמותית לפסיכומטרי</Text>
-          {/* הוספנו את התנאי שבודק אם יש שם ומתאים את הברכה */}
-          <Text style={styles.subtitle}>
-            {userName
-              ? `שלום ${userName}, מה נלמד היום?`
-              : "שלום מה נלמד היום?"}
-          </Text>
-        </View>
-
-        <View style={styles.cardsContainer}>
-          <TouchableOpacity
-            style={styles.card}
-            activeOpacity={0.7}
-            onPress={() => handleNavigation("StudyMaterials")}
-          >
-            <View style={styles.cardIcon}>
-              <Ionicons name="book-outline" size={28} color="#2695D8" />
-            </View>
-            <View style={styles.cardTextContainer}>
-              <Text style={styles.cardTitle}>חומרי לימוד</Text>
-              <Text style={styles.cardDescription}>
-                למידה מסודרת לפי נושאים
+    <View style={{ flex: 1 }}>
+      <AnimatedBackground />
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <View style={styles.topBar}>
+            {/* Streak badge — top-left corner */}
+            <BlurView intensity={Platform.OS === 'ios' ? 20 : 60} tint="light" style={[
+              styles.streakBadge,
+              currentStreak === 0 && styles.streakBadgeInactive,
+            ]}>
+              {currentStreak > 0 ? (
+                <Animated.Text
+                  style={[
+                    styles.streakFireIcon,
+                    { transform: [{ scale: pulseAnim }] },
+                  ]}
+                >
+                  🔥
+                </Animated.Text>
+              ) : (
+                <Ionicons name="flame-outline" size={18} color="#B0B8C9" />
+              )}
+              <Text style={[
+                styles.streakNumber,
+                currentStreak === 0 && styles.streakNumberInactive,
+              ]}>
+                {currentStreak}
               </Text>
-            </View>
-          </TouchableOpacity>
+            </BlurView>
 
-          <TouchableOpacity
-            style={styles.card}
-            activeOpacity={0.7}
-            onPress={() => handleNavigation("Practice")}
-          >
-            <View style={styles.cardIcon}>
-              <Ionicons name="pencil-outline" size={28} color="#F3902E" />
-            </View>
-            <View style={styles.cardTextContainer}>
-              <Text style={styles.cardTitle}>תרגול חופשי</Text>
-              <Text style={styles.cardDescription}>
-                אימון יומי לשיפור המיומנות
-              </Text>
-            </View>
-          </TouchableOpacity>
+            <TouchableOpacity onPress={openMenu} style={styles.settingsButton}>
+              <Ionicons name="settings-outline" size={26} color="#1A1F36" />
+            </TouchableOpacity>
+          </View>
 
-          <TouchableOpacity
-            style={styles.card}
-            activeOpacity={0.7}
-            onPress={() => handleNavigation("Simulation")}
-          >
-            <View style={styles.cardIcon}>
-              <Ionicons name="timer-outline" size={28} color="#162C5B" />
-            </View>
-            <View style={styles.cardTextContainer}>
-              <Text style={styles.cardTitle}>סימולציה מלאה</Text>
-              <Text style={styles.cardDescription}>מבחן זמן בתנאי אמת</Text>
-            </View>
-          </TouchableOpacity>
+          <View style={styles.headerContainer}>
+            <Text style={styles.title}>הכנה כמותית לפסיכומטרי</Text>
+            <Text style={styles.subtitle}>שלום {userName}, מה נלמד היום?</Text>
+          </View>
 
-          <TouchableOpacity
-            style={styles.card}
-            activeOpacity={0.7}
-            onPress={() => handleNavigation("Statistics")}
-          >
-            <View style={styles.cardIcon}>
-              <Ionicons name="stats-chart-outline" size={28} color="#4FB5ED" />
-            </View>
-            <View style={styles.cardTextContainer}>
-              <Text style={styles.cardTitle}>סטטיסטיקות</Text>
-              <Text style={styles.cardDescription}>מעקב אחר קצב ההתקדמות</Text>
-            </View>
-          </TouchableOpacity>
+          <View style={styles.cardsContainer}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => handleNavigation("StudyMaterials")}
+            >
+              <BlurView intensity={Platform.OS === 'ios' ? 30 : 75} tint="light" style={styles.card}>
+                <View style={styles.cardIcon}>
+                  <Ionicons name="book-outline" size={24} color="#3366FF" />
+                </View>
+                <View style={styles.cardTextContainer}>
+                  <Text style={styles.cardTitle}>חומרי לימוד</Text>
+                  <Text style={styles.cardDescription}>
+                    למידה מסודרת לפי נושאים
+                  </Text>
+                </View>
+              </BlurView>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.card}
-            activeOpacity={0.7}
-            onPress={() => handleNavigation("WeaknessAnalyzer")}
-          >
-            <View style={[styles.cardIcon, { backgroundColor: "#EBF4FF" }]}>
-              <Ionicons name="rocket-outline" size={28} color="#2695D8" />
-            </View>
-            <View style={styles.cardTextContainer}>
-              <Text style={styles.cardTitle}>תרגול חכם ממוקד</Text>
-              <Text style={styles.cardDescription}>השלמת פערים לפי חולשות</Text>
-            </View>
-          </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => handleNavigation("Practice")}
+            >
+              <BlurView intensity={Platform.OS === 'ios' ? 30 : 75} tint="light" style={styles.card}>
+                <View style={styles.cardIcon}>
+                  <Ionicons name="pencil-outline" size={24} color="#FF6D00" />
+                </View>
+                <View style={styles.cardTextContainer}>
+                  <Text style={styles.cardTitle}>תרגול חופשי</Text>
+                  <Text style={styles.cardDescription}>
+                    אימון יומי לשיפור המיומנות
+                  </Text>
+                </View>
+              </BlurView>
+            </TouchableOpacity>
 
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => handleNavigation("Simulation")}
+            >
+              <BlurView intensity={Platform.OS === 'ios' ? 30 : 75} tint="light" style={styles.card}>
+                <View style={styles.cardIcon}>
+                  <Ionicons name="timer-outline" size={24} color="#7C3AED" />
+                </View>
+                <View style={styles.cardTextContainer}>
+                  <Text style={styles.cardTitle}>סימולציה מלאה</Text>
+                  <Text style={styles.cardDescription}>מבחן זמן בתנאי אמת</Text>
+                </View>
+              </BlurView>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => handleNavigation("Statistics")}
+            >
+              <BlurView intensity={Platform.OS === 'ios' ? 30 : 75} tint="light" style={styles.card}>
+                <View style={styles.cardIcon}>
+                  <Ionicons name="stats-chart-outline" size={24} color="#00BCD4" />
+                </View>
+                <View style={styles.cardTextContainer}>
+                  <Text style={styles.cardTitle}>סטטיסטיקות</Text>
+                  <Text style={styles.cardDescription}>מעקב אחר קצב ההתקדמות</Text>
+                </View>
+              </BlurView>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => handleNavigation("WeaknessAnalyzer")}
+            >
+              <BlurView intensity={Platform.OS === 'ios' ? 30 : 75} tint="light" style={styles.card}>
+                <View style={[styles.cardIcon, { backgroundColor: "#EEF2FF" }]}>
+                  <Ionicons name="rocket-outline" size={24} color="#3366FF" />
+                </View>
+                <View style={styles.cardTextContainer}>
+                  <Text style={styles.cardTitle}>תרגול חכם ממוקד</Text>
+                  <Text style={styles.cardDescription}>השלמת פערים לפי חולשות</Text>
+                </View>
+              </BlurView>
+            </TouchableOpacity>
+          </View>
         </View>
-      </ScrollView>
+      </SafeAreaView>
 
       <Modal
         visible={isMenuVisible}
@@ -345,11 +419,25 @@ export default function HomeScreen({ navigation }: Props) {
               style={styles.menuItem}
               onPress={() => handleMenuPress("premium")}
             >
-              <Ionicons name="star-outline" size={22} color="#2695D8" />
+              <Ionicons name="star-outline" size={22} color="#3366FF" />
               <Text style={styles.menuItemText}>
                 {isPremium ? "ניהול מנוי פרימיום" : "שדרוג לפרימיום"}
               </Text>
             </TouchableOpacity>
+
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => handleMenuPress("feedback")}
+            >
+              <Ionicons
+                name="chatbubble-ellipses-outline"
+                size={22}
+                color="#3366FF"
+              />
+              <Text style={styles.menuItemText}>מה נוכל לשפר?</Text>
+            </TouchableOpacity>
+
 
             <TouchableOpacity
               style={styles.menuItem}
@@ -358,7 +446,7 @@ export default function HomeScreen({ navigation }: Props) {
               <Ionicons
                 name="document-text-outline"
                 size={22}
-                color="#2695D8"
+                color="#3366FF"
               />
               <Text style={styles.menuItemText}>מדיניות האפליקציה</Text>
             </TouchableOpacity>
@@ -367,14 +455,14 @@ export default function HomeScreen({ navigation }: Props) {
               style={styles.menuItem}
               onPress={() => handleMenuPress("contact")}
             >
-              <Ionicons name="mail-outline" size={22} color="#2695D8" />
+              <Ionicons name="mail-outline" size={22} color="#3366FF" />
               <Text style={styles.menuItemText}>צור קשר</Text>
             </TouchableOpacity>
 
             <View style={styles.menuDivider} />
 
             <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-              <Ionicons name="log-out-outline" size={22} color="#2695D8" />
+              <Ionicons name="log-out-outline" size={22} color="#3366FF" />
               <Text style={[styles.menuItemText]}>התנתק מהחשבון</Text>
             </TouchableOpacity>
 
@@ -382,71 +470,110 @@ export default function HomeScreen({ navigation }: Props) {
               style={styles.menuItem}
               onPress={handleDeleteAccount}
             >
-              <Ionicons name="trash-outline" size={22} color="#E53E3E" />
-              <Text style={[styles.menuItemText, { color: "#E53E3E" }]}>
+              <Ionicons name="trash-outline" size={22} color="#FF3D71" />
+              <Text style={[styles.menuItemText, { color: "#FF3D71" }]}>
                 מחק חשבון
               </Text>
             </TouchableOpacity>
           </Animated.View>
         </TouchableOpacity>
       </Modal>
-    </SafeAreaView>
+
+      <FeedbackModal
+        visible={isFeedbackModalVisible}
+        onClose={() => setFeedbackModalVisible(false)}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#9dbde9" },
+  safeArea: { flex: 1, backgroundColor: "transparent" },
   container: {
-    flexGrow: 1,
+    flex: 1,
     paddingHorizontal: 24,
     paddingTop: 40,
-    paddingBottom: 30,
+    paddingBottom: 20,
   },
-  topBar: { alignItems: "flex-end", marginBottom: 10 },
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
+  },
   settingsButton: { padding: 8 },
-  headerContainer: { marginBottom: 40, alignItems: "flex-end" },
-  title: {
-    fontSize: 28,
+
+  // --- Streak Badge Styles ---
+  streakBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Platform.select({ ios: "transparent", android: "rgba(255, 255, 255, 0.45)" }),
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.6)",
+    overflow: "hidden",
+    gap: 4,
+  },
+  streakBadgeInactive: {
+    backgroundColor: "rgba(0, 0, 0, 0.04)",
+  },
+  streakFireIcon: {
+    fontSize: 18,
+  },
+  streakNumber: {
+    fontSize: 16,
     fontWeight: "800",
-    color: "#ffffff",
-    marginBottom: 8,
+    color: "#3366FF",
+  },
+  streakNumberInactive: {
+    color: "#B0B8C9",
+  },
+
+  headerContainer: { marginBottom: 24, alignItems: "flex-end" },
+  title: {
+    fontSize: 26,
+    fontWeight: "800",
+    color: "#1A1F36",
+    marginBottom: 6,
     textAlign: "right",
   },
-  subtitle: { fontSize: 16, color: "#ffffff", textAlign: "right" },
+  subtitle: { fontSize: 15, color: "#6C7693", textAlign: "right" },
+
+  // --- Cards Styles ---
   cardsContainer: { gap: 16 },
   card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 20,
     flexDirection: "row-reverse",
     alignItems: "center",
-    shadowColor: "#162C5B",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 3,
+    backgroundColor: Platform.select({ ios: "transparent", android: "rgba(255, 255, 255, 0.5)" }),
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.8)",
+    overflow: "hidden",
   },
   cardIcon: {
-    width: 56,
-    height: 56,
+    width: 48,
+    height: 48,
     borderRadius: 12,
-    backgroundColor: "#F0F4F8",
+    backgroundColor: "#F0F3FF",
     justifyContent: "center",
     alignItems: "center",
-    marginLeft: 16,
+    marginLeft: 14,
   },
   cardTextContainer: { flex: 1, alignItems: "flex-end" },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "700",
-    color: "#162C5B",
-    marginBottom: 4,
+    color: "#1A1F36",
+    marginBottom: 2,
   },
-  cardDescription: { fontSize: 14, color: "#6B7C9D", textAlign: "right" },
+  cardDescription: { fontSize: 13, color: "#6C7693", textAlign: "right" },
 
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(22, 44, 91, 0.4)",
+    backgroundColor: "rgba(26, 31, 54, 0.35)",
     flexDirection: "row",
     justifyContent: "flex-end",
   },
@@ -466,13 +593,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#F0F4F8",
+    borderBottomColor: "#E5E9F2",
     marginBottom: 10,
   },
   menuHeaderText: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#162C5B",
+    color: "#1A1F36",
     textAlign: "right",
   },
   menuItem: {
@@ -484,13 +611,13 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     fontSize: 16,
-    color: "#162C5B",
+    color: "#1A1F36",
     fontWeight: "600",
     textAlign: "right",
   },
   menuDivider: {
     height: 1,
-    backgroundColor: "#E2E8F0",
+    backgroundColor: "#E5E9F2",
     marginVertical: 10,
     marginHorizontal: 16,
   },

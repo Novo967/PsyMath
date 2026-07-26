@@ -53,7 +53,7 @@ export default function ChapterScreen({ route, navigation }: any) {
         return (
           <View key={index} style={styles.tipContainer}>
             <View style={styles.iconWrapperTip}>
-              <Ionicons name="bulb" size={22} color="#D69E2E" />
+              <Ionicons name="bulb" size={22} color="#FFB020" />
             </View>
             <Text style={styles.tipText}>{block.content}</Text>
           </View>
@@ -62,7 +62,7 @@ export default function ChapterScreen({ route, navigation }: any) {
         return (
           <View key={index} style={styles.ruleContainer}>
             <View style={styles.iconWrapperRule}>
-              <Ionicons name="warning" size={22} color="#E53E3E" />
+              <Ionicons name="warning" size={22} color="#FF3D71" />
             </View>
             <Text style={styles.ruleText}>{block.content}</Text>
           </View>
@@ -97,7 +97,7 @@ export default function ChapterScreen({ route, navigation }: any) {
                     : "chevron-down"
                 }
                 size={24}
-                color="#4A90E2"
+                color="#3366FF"
               />
               <Text style={styles.topicTitle}>{topic.title}</Text>
             </TouchableOpacity>
@@ -121,7 +121,7 @@ export default function ChapterScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#9dbde9",
+    backgroundColor: "#F0F4FF",
   },
   header: {
     alignItems: "center", // ממורכז למרכז המסך (אופקית)
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22, // הגדלתי טיפה את הכותרת שתיראה טוב יותר בלי החץ
     fontWeight: "700",
-    color: "#ffffff",
+    color: "#1A1F36",
     textAlign: "center",
   },
   container: {
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
   topicTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#2D3748",
+    color: "#1A1F36",
     flex: 1,
     textAlign: "right",
     marginLeft: 15,
@@ -173,13 +173,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderTopWidth: 1,
-    borderTopColor: "#EDF2F7",
+    borderTopColor: "#E5E9F2",
     paddingTop: 15,
   },
   blockTitle: {
     fontSize: 17,
     fontWeight: "bold",
-    color: "#2B6CB0",
+    color: "#3366FF",
     marginTop: 15,
     marginBottom: 8,
     textAlign: "right",
@@ -192,16 +192,16 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
   tipContainer: {
-    backgroundColor: "#FEFCBF",
+    backgroundColor: "#FFFBEB",
     borderRadius: 12,
     padding: 16,
     marginVertical: 12,
     borderRightWidth: 4,
-    borderRightColor: "#D69E2E",
+    borderRightColor: "#FFB020",
   },
   tipText: {
     fontSize: 15,
-    color: "#744210",
+    color: "#7A5600",
     lineHeight: 22,
     textAlign: "right",
   },
@@ -210,16 +210,16 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   ruleContainer: {
-    backgroundColor: "#FED7D7",
+    backgroundColor: "#FFE0E8",
     borderRadius: 12,
     padding: 16,
     marginVertical: 12,
     borderRightWidth: 4,
-    borderRightColor: "#E53E3E",
+    borderRightColor: "#FF3D71",
   },
   ruleText: {
     fontSize: 15,
-    color: "#742A2A",
+    color: "#8C1D45",
     lineHeight: 22,
     textAlign: "right",
     fontWeight: "600",

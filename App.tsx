@@ -22,6 +22,8 @@ import {
 import Purchases from "react-native-purchases";
 
 import { auth, db } from "./firebaseConfig";
+import { registerForPushNotifications } from "./utils/notificationUtils";
+import * as Notifications from "expo-notifications";
 
 // Import Screens
 import ChapterScreen from "./screens/ChapterScreen";
@@ -44,12 +46,12 @@ export type RootStackParamList = {
   Practice: undefined;
   Simulation: undefined;
   Statistics: undefined;
-  WeaknessAnalyzer: undefined;
   SignUp: undefined;
   Login: undefined;
   SimulationResultsScreen: undefined;
   Paywall: undefined;
   ChapterScreen: undefined;
+  WeaknessAnalyzer: { subject?: string } | undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -235,6 +237,26 @@ export default function App() {
     };
   }, []);
 
+  // Performance Optimization: Push registration moved out of onAuthStateChanged 
+  // to avoid redundant fetches on token refreshes.
+  useEffect(() => {
+    if (user?.uid) {
+      registerForPushNotifications(user.uid);
+    }
+  }, [user?.uid]);
+
+  // Set up notification response listener (when user taps a notification)
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        console.log("Notification tapped:", response.notification.request.content);
+      }
+    );
+
+    return () => subscription.remove();
+  }, []);
+
+  // ניהול מצב הנגן של הוידאו
   const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
     if (status.isLoaded) {
       SplashScreen.hideAsync();
@@ -291,7 +313,7 @@ export default function App() {
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="large" color="#3366FF" />
       </View>
     );
   }
@@ -301,7 +323,8 @@ export default function App() {
       <Stack.Navigator
         screenOptions={({ navigation }) => ({
           headerShown: Platform.OS === "ios",
-          headerStyle: { backgroundColor: "#9dbde9" },
+          headerTransparent: Platform.OS === "ios",
+          headerStyle: { backgroundColor: Platform.OS === "ios" ? "transparent" : "#F0F4FF" },
           headerShadowVisible: false,
           headerTitle: "",
           headerBackVisible: false,
@@ -320,7 +343,7 @@ export default function App() {
                 >
                   <Text
                     style={{
-                      color: "#007AFF",
+                      color: "#3366FF",
                       fontSize: 17,
                       fontWeight: "400",
                     }}
@@ -330,7 +353,7 @@ export default function App() {
                   <Ionicons
                     name="chevron-forward"
                     size={24}
-                    color="#007AFF"
+                    color="#3366FF"
                     style={{ marginLeft: 0 }}
                   />
                 </TouchableOpacity>
@@ -355,7 +378,6 @@ export default function App() {
             <Stack.Screen name="Simulation" component={SimulationScreen} />
             <Stack.Screen name="Statistics" component={StatisticsScreen} />
             <Stack.Screen name="ChapterScreen" component={ChapterScreen} />
-            <Stack.Screen name="WeaknessAnalyzer" component={WeaknessAnalyzerScreen} />
             <Stack.Screen
               name="SimulationResultsScreen"
               component={SimulationResultsScreen}
@@ -365,6 +387,11 @@ export default function App() {
               name="Paywall"
               component={PaywallScreen}
               options={{ presentation: "modal", headerShown: false }}
+            />
+            <Stack.Screen
+              name="WeaknessAnalyzer"
+              component={WeaknessAnalyzerScreen}
+              options={{ title: "תרגול חכם" }}
             />
           </>
         ) : (
@@ -398,30 +425,30 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 24,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: "#F5F7FB",
   },
   updateTitle: {
     fontSize: 26,
     fontWeight: "800",
-    color: "#2D3748",
+    color: "#1A1F36",
     marginBottom: 12,
     textAlign: "center",
   },
   updateSubtitle: {
     fontSize: 16,
-    color: "#718096",
+    color: "#6C7693",
     textAlign: "center",
     marginBottom: 32,
     lineHeight: 24,
   },
   updateButton: {
-    backgroundColor: "#4A90E2",
+    backgroundColor: "#3366FF",
     paddingVertical: 16,
     paddingHorizontal: 40,
     borderRadius: 12,
     width: "100%",
     alignItems: "center",
-    shadowColor: "#4A90E2",
+    shadowColor: "#3366FF",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

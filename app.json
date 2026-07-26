@@ -2,7 +2,7 @@
   "expo": {
     "name": "כמותי",
     "slug": "psychometric-mathematics",
-    "version": "1.0.8",
+    "version": "1.1.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "psychometricmathematics",
@@ -11,7 +11,7 @@
     "ios": {
       "bundleIdentifier": "com.novrubin.psychometricmathematics",
       "usesAppleSignIn": true,
-      "buildNumber": "11",
+      "buildNumber": "16",
       "supportsTablet": true,
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
@@ -33,6 +33,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.novrubin.psychometricmathematics",
+      "googleServicesFile": "./google-services (6).json",
       "versionCode": 3
     },
     "web": {
@@ -40,6 +41,14 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
       "./withAndroidAsset.js",
       [
         "expo-splash-screen",
@@ -51,7 +60,14 @@
           }
         }
       ],
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#4A90E2"
+        }
+      ]
     ],
     "experiments": {
       "reactCompiler": true

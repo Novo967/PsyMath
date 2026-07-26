@@ -42,9 +42,9 @@ export default function SimulationResultsScreen() {
 
   // בחירת צבע לציון
   const getScoreColor = () => {
-    if (score >= 80) return "#38A169"; // ירוק
-    if (score >= 55) return "#DD6B20"; // כתום
-    return "#E53E3E"; // אדום
+    if (score >= 80) return "#00C48F"; // ירוק
+    if (score >= 55) return "#FF6D00"; // כתום
+    return "#FF3D71"; // אדום
   };
 
   return (
@@ -61,19 +61,19 @@ export default function SimulationResultsScreen() {
 
           <View style={styles.statsRow}>
             <View style={styles.statBox}>
-              <Text style={[styles.statNumber, { color: "#38A169" }]}>
+              <Text style={[styles.statNumber, { color: "#00D68F" }]}>
                 {correctCount}
               </Text>
               <Text style={styles.statLabel}>נכונות</Text>
             </View>
             <View style={styles.statBox}>
-              <Text style={[styles.statNumber, { color: "#E53E3E" }]}>
+              <Text style={[styles.statNumber, { color: "#FF3D71" }]}>
                 {wrongCount}
               </Text>
               <Text style={styles.statLabel}>שגויות</Text>
             </View>
             <View style={styles.statBox}>
-              <Text style={[styles.statNumber, { color: "#718096" }]}>
+              <Text style={[styles.statNumber, { color: "#6C7693" }]}>
                 {unansweredCount}
               </Text>
               <Text style={styles.statLabel}>לא נענו</Text>
@@ -98,10 +98,10 @@ export default function SimulationResultsScreen() {
                     styles.statusBadge,
                     {
                       backgroundColor: isCorrect
-                        ? "#C6F6D5"
+                        ? "#D5F5E8"
                         : isUnanswered
-                          ? "#EDF2F7"
-                          : "#FED7D7",
+                          ? "#EBF0F7"
+                          : "#FFE0E8",
                     },
                   ]}
                 >
@@ -110,10 +110,10 @@ export default function SimulationResultsScreen() {
                       styles.statusText,
                       {
                         color: isCorrect
-                          ? "#2F855A"
+                          ? "#00875A"
                           : isUnanswered
                             ? "#4A5568"
-                            : "#C53030",
+                            : "#DB2B5A",
                       },
                     ]}
                   >
@@ -141,12 +141,12 @@ export default function SimulationResultsScreen() {
                     optionStyle = styles.optionCorrect;
                     textStyle = styles.optionTextCorrect;
                     iconName = "checkmark-circle";
-                    iconColor = "#38A169";
+                    iconColor = "#00D68F";
                   } else if (isThisUserWrongOption) {
                     optionStyle = styles.optionWrong;
                     textStyle = styles.optionTextWrong;
                     iconName = "close-circle";
-                    iconColor = "#E53E3E";
+                    iconColor = "#FF3D71";
                   }
 
                   return (
@@ -171,7 +171,7 @@ export default function SimulationResultsScreen() {
               {/* קוביית ההסבר */}
               <View style={styles.explanationBox}>
                 <View style={styles.explanationHeader}>
-                  <Ionicons name="bulb-outline" size={20} color="#D69E2E" />
+                  <Ionicons name="bulb-outline" size={20} color="#FFB020" />
                   <Text style={styles.explanationTitle}>הסבר הפתרון:</Text>
                 </View>
                 <Text style={styles.explanationText}>
@@ -197,7 +197,7 @@ export default function SimulationResultsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: "#F5F7FB",
   },
   scrollContainer: {
     padding: 20,
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#2D3748",
+    color: "#1A1F36",
     marginBottom: 20,
   },
   scoreCircle: {
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     width: "100%",
     borderTopWidth: 1,
-    borderTopColor: "#EDF2F7",
+    borderTopColor: "#E5E9F2",
     paddingTop: 20,
   },
   statBox: {
@@ -253,13 +253,13 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 14,
-    color: "#718096",
+    color: "#6C7693",
     marginTop: 4,
   },
   reviewTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#2D3748",
+    color: "#1A1F36",
     textAlign: "right",
     marginBottom: 15,
   },
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
   questionNumber: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#4A5568",
+    color: "#1A1F36",
   },
   statusBadge: {
     paddingHorizontal: 10,
@@ -296,14 +296,14 @@ const styles = StyleSheet.create({
   },
   topicText: {
     fontSize: 14,
-    color: "#718096",
+    color: "#6C7693",
     textAlign: "right",
     marginBottom: 8,
   },
   questionText: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#2D3748",
+    color: "#1A1F36",
     textAlign: "right",
     marginBottom: 20,
     lineHeight: 26,
@@ -322,15 +322,15 @@ const styles = StyleSheet.create({
   },
   optionNeutral: {
     backgroundColor: "#F7FAFC",
-    borderColor: "#E2E8F0",
+    borderColor: "#E5E9F2",
   },
   optionCorrect: {
     backgroundColor: "#F0FFF4",
-    borderColor: "#9AE6B4",
+    borderColor: "#7DDFBD",
   },
   optionWrong: {
     backgroundColor: "#FFF5F5",
-    borderColor: "#FEB2B2",
+    borderColor: "#FFB3C7",
   },
   optionText: {
     fontSize: 16,
@@ -341,18 +341,18 @@ const styles = StyleSheet.create({
     color: "#4A5568",
   },
   optionTextCorrect: {
-    color: "#276749",
+    color: "#00875A",
     fontWeight: "600",
   },
   optionTextWrong: {
-    color: "#9B2C2C",
+    color: "#B82050",
     fontWeight: "600",
     textDecorationLine: "line-through",
   },
   explanationBox: {
     backgroundColor: "#FFFFF0",
     borderWidth: 1,
-    borderColor: "#FEFCBF",
+    borderColor: "#FFFBEB",
     borderRadius: 12,
     padding: 15,
   },
@@ -364,17 +364,17 @@ const styles = StyleSheet.create({
   explanationTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#B7791F",
+    color: "#A67C00",
     marginRight: 8,
   },
   explanationText: {
     fontSize: 15,
-    color: "#744210",
+    color: "#7A5600",
     textAlign: "right",
     lineHeight: 24,
   },
   homeButton: {
-    backgroundColor: "#4A90E2",
+    backgroundColor: "#3366FF",
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: "center",
