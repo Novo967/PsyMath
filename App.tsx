@@ -336,25 +336,15 @@ export default function App() {
                   onPress={() => navigation.goBack()}
                   activeOpacity={0.0}
                   style={{
-                    flexDirection: "row",
                     alignItems: "center",
+                    justifyContent: "center",
                     backgroundColor: "transparent",
                   }}
                 >
-                  <Text
-                    style={{
-                      color: "#3366FF",
-                      fontSize: 17,
-                      fontWeight: "400",
-                    }}
-                  >
-                    חזור
-                  </Text>
                   <Ionicons
                     name="chevron-forward"
-                    size={24}
+                    size={28}
                     color="#3366FF"
-                    style={{ marginLeft: 0 }}
                   />
                 </TouchableOpacity>
               );
