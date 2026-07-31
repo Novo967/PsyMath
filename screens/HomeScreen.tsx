@@ -2,7 +2,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { BlurView } from "expo-blur";
-import { deleteUser, signOut } from "firebase/auth";
+import {
+  deleteUser,
+  EmailAuthProvider,
+  linkWithCredential,
+  signOut,
+} from "firebase/auth";
 import { deleteDoc, doc, getDoc, updateDoc } from "firebase/firestore";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -42,6 +47,7 @@ export default function HomeScreen({ navigation }: Props) {
   const [userName, setUserName] = useState("");
   const [isFeedbackModalVisible, setFeedbackModalVisible] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(0);
+  const [isAnonymous, setIsAnonymous] = useState(false);
 
   const slideAnim = useRef(new Animated.Value(width)).current;
   // אנימציית פעימה לאייקון הסטריק
@@ -52,6 +58,9 @@ export default function HomeScreen({ navigation }: Props) {
       const fetchUserData = async () => {
         if (auth.currentUser) {
           try {
+            // בדיקה אם המשתמש אנונימי
+            setIsAnonymous(auth.currentUser.isAnonymous);
+
             const userRef = doc(db, "users", auth.currentUser.uid);
 
             // משיכת נתוני המשתמש מה-Firestore (מקור האמת שלנו)
@@ -61,6 +70,8 @@ export default function HomeScreen({ navigation }: Props) {
             } else if (auth.currentUser.displayName) {
               // גיבוי למקרה שהשם שמור רק ב-Auth מסיבה כלשהי
               setUserName(auth.currentUser.displayName);
+            } else if (auth.currentUser.isAnonymous) {
+              setUserName("אורח");
             }
 
             const customerInfo = await Purchases.getCustomerInfo();
@@ -264,10 +275,93 @@ export default function HomeScreen({ navigation }: Props) {
             "https://novo967.github.io/Camuty-landing-page/contact.html",
           );
           break;
+        case "createAccount":
+          handleCreatePermanentAccount();
+          break;
         default:
           break;
       }
     });
+  };
+
+  // --- לוגיקת קישור חשבון אנונימי לחשבון קבוע ---
+  const handleCreatePermanentAccount = () => {
+    Alert.prompt(
+      "יצירת חשבון קבוע",
+      "הזן כתובת אימייל:",
+      [
+        { text: "ביטול", style: "cancel" },
+        {
+          text: "המשך",
+          onPress: (email?: string) => {
+            if (!email) {
+              Alert.alert("שגיאה", "אנא הזן כתובת אימייל.");
+              return;
+            }
+            Alert.prompt(
+              "יצירת חשבון קבוע",
+              "הזן סיסמה (לפחות 6 תווים):",
+              [
+                { text: "ביטול", style: "cancel" },
+                {
+                  text: "צור חשבון",
+                  onPress: async (password?: string) => {
+                    if (!password || password.length < 6) {
+                      Alert.alert("שגיאה", "הסיסמה חייבת להכיל לפחות 6 תווים.");
+                      return;
+                    }
+                    try {
+                      const credential = EmailAuthProvider.credential(
+                        email,
+                        password,
+                      );
+                      if (!auth.currentUser) return;
+                      await linkWithCredential(auth.currentUser, credential);
+
+                      // עדכון ה-Firestore document
+                      const userRef = doc(db, "users", auth.currentUser.uid);
+                      await updateDoc(userRef, {
+                        email: email,
+                        isAnonymous: false,
+                      });
+
+                      setIsAnonymous(false);
+
+                      Alert.alert(
+                        "חשבון נוצר בהצלחה!",
+                        "החשבון שלך שודרג לחשבון קבוע. כל הנתונים, ההיסטוריה והרכישות שלך נשמרו.",
+                      );
+                    } catch (error: any) {
+                      console.error("Account linking error:", error);
+                      if (error.code === "auth/email-already-in-use") {
+                        Alert.alert(
+                          "שגיאה",
+                          "כתובת האימייל הזו כבר בשימוש. אנא נסה כתובת אחרת.",
+                        );
+                      } else if (error.code === "auth/weak-password") {
+                        Alert.alert(
+                          "שגיאה",
+                          "הסיסמה חלשה מדי. אנא בחר סיסמה חזקה יותר.",
+                        );
+                      } else {
+                        Alert.alert(
+                          "שגיאה",
+                          "לא הצלחנו ליצור חשבון קבוע. אנא נסה שוב מאוחר יותר.",
+                        );
+                      }
+                    }
+                  },
+                },
+              ],
+              "secure-text",
+            );
+          },
+        },
+      ],
+      "plain-text",
+      "",
+      "email-address",
+    );
   };
 
   return (
@@ -461,9 +555,22 @@ export default function HomeScreen({ navigation }: Props) {
 
             <View style={styles.menuDivider} />
 
+            {/* אפשרות יצירת חשבון קבוע למשתמשים אנונימיים */}
+            {isAnonymous && (
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => handleMenuPress("createAccount")}
+              >
+                <Ionicons name="person-add-outline" size={22} color="#00BFA5" />
+                <Text style={[styles.menuItemText, { color: "#00BFA5" }]}>
+                  צור חשבון קבוע
+                </Text>
+              </TouchableOpacity>
+            )}
+
             <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
               <Ionicons name="log-out-outline" size={22} color="#3366FF" />
-              <Text style={[styles.menuItemText]}>התנתק מהחשבון</Text>
+              <Text style={[styles.menuItemText]}>{isAnonymous ? "יציאה מחשבון אורח" : "התנתק מהחשבון"}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity

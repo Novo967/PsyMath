@@ -1,0 +1,132 @@
+{
+  "analyzedUsersCount": 106,
+  "duplicateIssues": {
+    "usersWithDataForDuplicateCheck": 106,
+    "usersWhoSawDuplicates": 8,
+    "percentage": "7.55%"
+  },
+  "topKillerQuestions_Last": [
+    {
+      "questionId": "q_math_geo_007",
+      "dropCount": 4
+    },
+    {
+      "questionId": "q_math_comb_003",
+      "dropCount": 4
+    },
+    {
+      "questionId": "q_math_alg_024",
+      "dropCount": 4
+    },
+    {
+      "questionId": "q_math_wp_009",
+      "dropCount": 3
+    },
+    {
+      "questionId": "q_math_geo_002",
+      "dropCount": 3
+    },
+    {
+      "questionId": "q_math_comb_001",
+      "dropCount": 3
+    },
+    {
+      "questionId": "q_math_wp_023",
+      "dropCount": 2
+    },
+    {
+      "questionId": "q_math_wp_006",
+      "dropCount": 2
+    },
+    {
+      "questionId": "q_math_geo_003",
+      "dropCount": 2
+    },
+    {
+      "questionId": "q_math_new_026",
+      "dropCount": 2
+    },
+    {
+      "questionId": "q_math_geo_012",
+      "dropCount": 2
+    },
+    {
+      "questionId": "q_math_new_004",
+      "dropCount": 2
+    },
+    {
+      "questionId": "q_math_wp_029",
+      "dropCount": 2
+    },
+    {
+      "questionId": "q_math_geo_033",
+      "dropCount": 2
+    },
+    {
+      "questionId": "q_math_alg_007",
+      "dropCount": 2
+    }
+  ],
+  "topKillerQuestions_SecondLast": [
+    {
+      "questionId": "q_math_alg_019",
+      "dropCount": 5
+    },
+    {
+      "questionId": "q_math_wp_030",
+      "dropCount": 3
+    },
+    {
+      "questionId": "q_math_comb_004",
+      "dropCount": 3
+    },
+    {
+      "questionId": "q_math_new_026",
+      "dropCount": 3
+    },
+    {
+      "questionId": "q_math_wp_013",
+      "dropCount": 2
+    },
+    {
+      "questionId": "q_math_new_041",
+      "dropCount": 2
+    },
+    {
+      "questionId": "q_math_new_003",
+      "dropCount": 2
+    },
+    {
+      "questionId": "q_math_comb_009",
+      "dropCount": 2
+    },
+    {
+      "questionId": "q_math_new_018",
+      "dropCount": 2
+    },
+    {
+      "questionId": "q_math_geo_012",
+      "dropCount": 2
+    },
+    {
+      "questionId": "q_math_geo_027",
+      "dropCount": 2
+    },
+    {
+      "questionId": "q_math_geo_013",
+      "dropCount": 2
+    },
+    {
+      "questionId": "q_math_alg_008",
+      "dropCount": 2
+    },
+    {
+      "questionId": "q_math_wp_029",
+      "dropCount": 2
+    },
+    {
+      "questionId": "q_math_alg_018",
+      "dropCount": 2
+    }
+  ]
+}

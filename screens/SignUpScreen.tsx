@@ -8,6 +8,7 @@ import {
   GoogleAuthProvider,
   OAuthProvider,
   sendEmailVerification,
+  signInAnonymously,
   signInWithCredential,
   signOut,
   updateProfile,
@@ -40,6 +41,7 @@ export default function SignUpScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isAppleLoading, setIsAppleLoading] = useState(false);
+  const [isGuestLoading, setIsGuestLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -144,7 +146,7 @@ export default function SignUpScreen() {
     try {
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
-      const idToken = userInfo.data?.idToken;
+      const idToken = userInfo.idToken;
 
       if (!idToken) throw new Error("No ID token found");
 
@@ -195,6 +197,50 @@ export default function SignUpScreen() {
       }
     } finally {
       setIsAppleLoading(false);
+    }
+  };
+
+  const handleGuestSignIn = async () => {
+    setIsGuestLoading(true);
+    try {
+      const userCredential = await signInAnonymously(auth);
+      const user = userCredential.user;
+
+      // יצירת מסמך Firestore עבור משתמש אנונימי
+      const userRef = doc(db, "users", user.uid);
+      const docSnap = await getDoc(userRef);
+
+      if (!docSnap.exists()) {
+        let localDeviceId = await AsyncStorage.getItem("deviceId");
+        if (!localDeviceId) {
+          localDeviceId = `dev_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+          await AsyncStorage.setItem("deviceId", localDeviceId);
+        }
+
+        await setDoc(userRef, {
+          email: null,
+          name: "אורח",
+          isAnonymous: true,
+          isPremium: false,
+          questionsSolvedToday: 0,
+          dailyLimit: 10,
+          lastQuestionDate: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          lastDeviceId: localDeviceId,
+          deviceChangeCount: 0,
+          lastDeviceResetMonth: new Date().toISOString().slice(0, 7),
+        });
+      }
+
+      Alert.alert(
+        "ברוך הבא!",
+        "אתה משתמש כעת בחשבון אורח. היסטוריית התרגול והרכישות שלך נשמרות במכשיר זה בלבד.\n\nכדי לסנכרן את הנתונים בין מכשירים ולשמור עליהם, מומלץ מאוד ליצור חשבון קבוע דרך תפריט ההגדרות.",
+      );
+    } catch (error: any) {
+      console.error("Guest Sign-In Error:", error);
+      Alert.alert("שגיאה", "לא הצלחנו להיכנס כאורח. אנא נסה שוב.");
+    } finally {
+      setIsGuestLoading(false);
     }
   };
 
@@ -372,6 +418,27 @@ export default function SignUpScreen() {
                   כבר יש לך חשבון? התחבר כאן
                 </Text>
               </TouchableOpacity>
+
+              <View style={styles.guestDividerContainer}>
+                <View style={styles.divider} />
+                <Text style={styles.dividerText}>או</Text>
+                <View style={styles.divider} />
+              </View>
+
+              <TouchableOpacity
+                style={styles.guestButton}
+                onPress={handleGuestSignIn}
+                disabled={isGuestLoading}
+              >
+                {isGuestLoading ? (
+                  <ActivityIndicator color="#6C7693" />
+                ) : (
+                  <>
+                    <Ionicons name="person-outline" size={20} color="#6C7693" />
+                    <Text style={styles.guestButtonText}>המשך כאורח</Text>
+                  </>
+                )}
+              </TouchableOpacity>
             </View>
           </ScrollView>
         </TouchableWithoutFeedback>
@@ -454,5 +521,27 @@ const styles = StyleSheet.create({
     color: "#3366FF",
     fontSize: 16,
     fontWeight: "600",
+  },
+  guestDividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 6,
+  },
+  guestButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "transparent",
+    height: 50,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#D1D5E0",
+    borderStyle: "dashed",
+    gap: 8,
+  },
+  guestButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#6C7693",
   },
 });

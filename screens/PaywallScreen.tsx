@@ -6,6 +6,7 @@ import {
     ActivityIndicator,
     Alert,
     Dimensions,
+    Linking,
     SafeAreaView,
     ScrollView,
     StyleSheet,
@@ -18,6 +19,10 @@ import { RootStackParamList } from "../App";
 import { auth, db } from "../firebaseConfig"; // ודא שהנתיב נכון
 
 const { width } = Dimensions.get("window");
+
+// קישורים למדיניות פרטיות ותנאי שימוש
+const PRIVACY_POLICY_URL = "https://novo967.github.io/Camuty-landing-page/privacy.html";
+const TERMS_OF_USE_URL = "https://novo967.github.io/Camuty-landing-page/index.html";
 
 type PaywallScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -34,6 +39,7 @@ export default function PaywallScreen({ navigation }: Props) {
   const [selectedPackage, setSelectedPackage] =
     useState<PurchasesPackage | null>(null);
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
 
   useEffect(() => {
     const fetchOfferings = async () => {
@@ -97,6 +103,47 @@ export default function PaywallScreen({ navigation }: Props) {
       }
     } finally {
       setIsPurchasing(false);
+    }
+  };
+
+  const handleRestorePurchases = async () => {
+    setIsRestoring(true);
+    try {
+      const customerInfo = await Purchases.restorePurchases();
+      const isUserPremium =
+        !!customerInfo.entitlements.active["כמותי לפסיכומטרי Pro"];
+
+      if (isUserPremium) {
+        // עדכון סטטוס פרימיום ב-Firestore
+        if (auth.currentUser) {
+          try {
+            const userRef = doc(db, "users", auth.currentUser.uid);
+            await updateDoc(userRef, {
+              isPremium: true,
+            });
+          } catch (error) {
+            console.error("Error updating Firebase after restore:", error);
+          }
+        }
+        Alert.alert(
+          "שחזור הצליח!",
+          "המנוי שלך שוחזר בהצלחה. תהנה מגישה מלאה לכל התכנים!",
+          [{ text: "המשך ללמידה", onPress: handleClose }],
+        );
+      } else {
+        Alert.alert(
+          "לא נמצא מנוי",
+          "לא הצלחנו לאתר מנוי פעיל המשויך לחשבון זה. אם רכשת מנוי בעבר, ודא שאתה מחובר עם אותו חשבון Apple ID או Google.",
+        );
+      }
+    } catch (error) {
+      console.error("Error restoring purchases:", error);
+      Alert.alert(
+        "שגיאה",
+        "לא הצלחנו לשחזר את הרכישות. אנא נסה שוב מאוחר יותר.",
+      );
+    } finally {
+      setIsRestoring(false);
     }
   };
 
@@ -205,6 +252,34 @@ export default function PaywallScreen({ navigation }: Props) {
             )}
           </TouchableOpacity>
         )}
+
+        {/* כפתור שחזור רכישות */}
+        <TouchableOpacity
+          style={styles.restoreButton}
+          onPress={handleRestorePurchases}
+          disabled={isRestoring}
+        >
+          {isRestoring ? (
+            <ActivityIndicator color="#6C7693" size="small" />
+          ) : (
+            <Text style={styles.restoreButtonText}>שחזור רכישות</Text>
+          )}
+        </TouchableOpacity>
+
+        {/* קישורים למדיניות פרטיות ותנאי שימוש - נדרש לפי App Store Guideline 3.1.2(c) */}
+        <View style={styles.legalLinksContainer}>
+          <TouchableOpacity
+            onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+          >
+            <Text style={styles.legalLinkText}>מדיניות פרטיות</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalSeparator}>·</Text>
+          <TouchableOpacity
+            onPress={() => Linking.openURL(TERMS_OF_USE_URL)}
+          >
+            <Text style={styles.legalLinkText}>תנאי שימוש (EULA)</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -340,5 +415,35 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 20,
     fontWeight: "800",
+  },
+  restoreButton: {
+    alignItems: "center",
+    paddingVertical: 14,
+    marginTop: 8,
+  },
+  restoreButtonText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "600",
+    textDecorationLine: "underline",
+  },
+  legalLinksContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 4,
+    paddingBottom: 10,
+  },
+  legalLinkText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    opacity: 0.75,
+    textDecorationLine: "underline",
+  },
+  legalSeparator: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    opacity: 0.75,
+    marginHorizontal: 10,
   },
 });
